@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Planes de Acción | SST-AnalyTIC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- ======================= CSS y Bootstrap ======================= -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/planes_accion.css') }}">
+</head>
+<body>
+
+<!-- ======================= SIDEBAR ======================= -->
+<div class="sidebar" id="sidebar">
+  <button class="toggle-btn" id="toggleBtn"><i class="bi bi-list"></i></button>
+  <h2>SST-AnalyTIC</h2>
+  <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    </ul>
+</div>
+
+<!-- ======================= HEADER ======================= -->
+<div class="content flex-grow-1" id="mainContent">
+<header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+    <div><strong><i class="bi bi-book"></i>Gestion Planes De Accion </strong></div>
+    <div class="text-end">
+        <div class="user-info">
+            <div>{{ usuario_actual.nombre_completo if usuario_actual else 'Usuario Desconocido' }}</div>
+            <div class="text-muted small">{{ usuario_actual.rol if usuario_actual else 'Sin Rol' }}</div>
+        </div>
+        <a href="{{ url_for('auth.cerrar_sesion') }}">
+            <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+        </a>
+    </div>
+</header>
+
+
+<!-- ======================= CONTENIDO PRINCIPAL ======================= -->
+<div id="mainContent">
+  <div class="container mt-5 pt-3">
+
+    <!-- ======================= Encabezado y botón nuevo plan ======================= -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold text-dark"><i class="bi bi-clipboard-check"></i> Listado de Planes de Acción</h4>
+      {% if rol in ['Super Administrador'] %}
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+        <i class="bi bi-plus-circle"></i> Nuevo Plan
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- ======================= Búsqueda ======================= -->
+    <form method="get" class="mb-4 d-flex flex-wrap" style="gap:10px;">
+      <input type="text" name="buscar" class="form-control" placeholder="Buscar por nombre o NIT..." value="{{ filtro }}">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Buscar</button>
+      <a href="{{ url_for('planes_accion.listar_planes') }}" class="btn btn-secondary">Limpiar</a>
+    </form>
+
+    <!-- ======================= Mensajes flash ======================= -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- ======================= Tabla de planes ======================= -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        {% if planes %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle custom-table">
+            <thead>
+              <tr>
+                <th>NIT Empresa</th>
+                <th>Descripción</th>
+                <th>Responsable</th>
+                <th>Estado</th>
+                <th>Empresa</th>
+                <th>Hallazgo</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in planes %}
+              <tr>
+                <td>{{ p.nit_empresa or 'Sin NIT' }}</td>
+                <td>{{ p.descripcion[:70] }}...</td>
+                <td>{{ p.responsable or 'Sin asignar' }}</td>
+                <td>
+                  <span class="badge 
+                    {% if p.estado == 'Pendiente' %}bg-info
+                    {% elif p.estado == 'En Progreso' %}bg-warning
+                    {% elif p.estado == 'Completado' %}bg-success
+                    {% else %}bg-secondary{% endif %}">{{ p.estado }}
+                  </span>
+                </td>
+                <td>{{ p.nombre_empresa or 'Sin empresa' }}</td>
+                <td>{{ p.hallazgo[:60] }}...</td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-info btn-sm" onclick="verPlan({{ p.id }})"><i class="bi bi-eye"></i></button>
+                    {% if rol in ['Super Administrador'] %}
+                    <button class="btn btn-warning btn-sm" onclick="editarPlan({{ p.id }})"><i class="bi bi-pencil-square"></i></button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ======================= Paginación ======================= -->
+        <nav aria-label="Paginación">
+          <ul class="pagination justify-content-center mt-3">
+            {% if pagina_actual > 1 %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('planes_accion.listar_planes') }}?page={{ pagina_actual-1 }}&buscar={{ filtro }}"> < </a></li>
+            {% endif %}
+            {% for i in range(1, total_paginas+1) %}
+            <li class="page-item {% if i == pagina_actual %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('planes_accion.listar_planes') }}?page={{ i }}&buscar={{ filtro }}">{{ i }}</a>
+            </li>
+            {% endfor %}
+            {% if pagina_actual < total_paginas %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('planes_accion.listar_planes') }}?page={{ pagina_actual+1 }}&buscar={{ filtro }}"> > </a></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% else %}
+        <p class="text-muted">No hay planes de acción registrados.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODALES ======================= -->
+
+<!-- ======================= Modal Ver Plan ======================= -->
+<div class="modal fade" id="modalVer" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-eye"></i> Detalle del Plan de Acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detallePlan"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= Modal Editar Plan ======================= -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Plan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="contenidoEditar">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= Modal Nuevo Plan ======================= -->
+<div class="modal fade" id="modalAgregar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nuevo Plan de Acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- ======================= Formulario ======================= -->
+        <form method="POST" action="{{ url_for('planes_accion.agregar_plan') }}" enctype="multipart/form-data">
+          <div class="row g-3">
+            
+            <!-- Seleccionar Empresa -->
+            <div class="col-md-6">
+              <label class="form-label">Empresa</label>
+              <select id="selectEmpresa" name="nit_empresa" class="form-select" required>
+                <option value="">Seleccione una empresa</option>
+                {% for e in empresas %}
+                  <option value="{{ e.nit_empresa }}">{{ e.nombre }} - {{ e.nit_empresa }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Seleccionar Responsable -->
+            <div class="col-md-6">
+              <label class="form-label">Responsable</label>
+              <select id="selectResponsable" name="responsable_id" class="form-select" required>
+                <option value="">Seleccione primero una empresa</option>
+              </select>
+            </div>
+
+            <!-- Descripción de la tarea -->
+            <div class="col-12">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" name="descripcion" rows="3" required></textarea>
+            </div>
+
+            <!-- Hallazgo -->
+            <div class="col-12">
+              <label class="form-label">Hallazgo</label>
+              <textarea class="form-control" name="hallazgo_descripcion" rows="2" required></textarea>
+            </div>
+
+            <!-- Fecha límite -->
+            <div class="col-md-6">
+              <label class="form-label">Fecha límite</label>
+              <input 
+                type="date" 
+                name="fecha_limite" 
+                class="form-control" 
+                required
+                min="{{ hoy }}"> <!-- Evita días pasados -->
+            </div>
+
+            <!-- Evidencia -->
+            <div class="col-md-6">
+              <label class="form-label">Evidencia (opcional)</label>
+              <input type="file" name="evidencia" class="form-control">
+            </div>
+          </div>
+
+          <div class="mt-4 text-end">
+            <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Guardar Plan
+          </button>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+              <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= Scripts ======================= -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ======================= Cargar Responsables según Empresa ======================= */
+document.getElementById("selectEmpresa").addEventListener("change", function() {
+  const nit = this.value;
+  const selectResp = document.getElementById("selectResponsable");
+  selectResp.innerHTML = '<option value="">Cargando...</option>';
+
+  if(nit) {
+    fetch(`/planes_accion/api/responsables/${nit}`)
+      .then(res => res.json())
+      .then(data => {
+        let opciones = '<option value="">Seleccione un responsable</option>';
+        data.forEach(r => {
+            const selected = r.id == selectResp.dataset.actual ? 'selected' : '';
+            opciones += `<option value="${r.id}" ${selected}>${r.nombre_completo}</option>`;
+        });
+        selectResp.innerHTML = opciones;
+    });
+
+  } else {
+    selectResp.innerHTML = '<option value="">Seleccione primero una empresa</option>';
+  }
+});
+
+/* ======================= Ver Plan ======================= */
+function verPlan(id) {
+  fetch(`/planes_accion/api/planes/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      if(data.plan) {
+        const p = data.plan;
+        let html = `
+          <p><strong>Tarea:</strong> ${p.descripcion}</p>
+          <p><strong>Hallazgo:</strong> ${p.hallazgo}</p>
+          <p><strong>Empresa:</strong> ${p.nombre_empresa} (${p.nit_empresa})</p>
+          <p><strong>Responsable:</strong> ${p.responsable}</p>
+          <p><strong>Estado:</strong> ${p.estado}</p>
+          ${p.evidencia_url 
+  ? `<p><strong>Evidencia:</strong> 
+      <a href="/planes_accion/descargar/${p.id}" 
+         class="text-primary fw-bold">
+         Descargar evidencia
+      </a>
+     </p>` 
+  : '<p><strong>Evidencia:</strong> <span class="text-muted">Sin evidencia adjunta</span></p>'}
+`;
+        document.getElementById("detallePlan").innerHTML = html;
+        new bootstrap.Modal(document.getElementById("modalVer")).show();
+      }
+    });
+}
+
+/* ======================= Editar Plan ======================= */
+function editarPlan(id) {
+  fetch(`/planes_accion/api/planes/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      if(data.plan) {
+        const p = data.plan;
+        
+        // Construir opciones de empresa
+        const opcionesEmpresas = data.empresas.map(e => 
+          `<option value="${e.nit_empresa}" ${e.nit_empresa === p.nit_empresa ? 'selected' : ''}>
+            ${e.nombre} - ${e.nit_empresa}
+          </option>`).join('');
+
+        // Construir opciones de responsable
+        const opcionesResponsable = data.personal.map(persona => 
+          `<option value="${persona.id}" ${persona.id == p.responsable_id ? 'selected' : ''}>
+            ${persona.nombre_completo}
+          </option>`).join('');
+
+        let html = `
+          <form method="POST" action="/planes_accion/editar/${p.id}" enctype="multipart/form-data">
+            <div class="row">
+
+              <!-- Empresa -->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Empresa</label>
+                <input type="text" class="form-control" value="${p.nit_empresa} - ${p.nombre_empresa}" disabled>
+                <input type="hidden" name="nit_empresa" value="${p.nit_empresa}">
+              </div>
+
+              <!-- Responsable -->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Responsable</label>
+                <select id="selectResponsable" name="responsable_id" class="form-select" required>
+                  <option value="">Seleccione primero una empresa</option>
+                  ${opcionesResponsable}
+                </select>
+              </div>
+
+              <!-- Descripción -->
+              <div class="col-12 mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" name="descripcion" rows="3" required>${p.descripcion}</textarea>
+              </div>
+
+              <!-- Hallazgo -->
+              <div class="col-12 mb-3">
+                <label class="form-label">Hallazgo</label>
+                <textarea class="form-control" name="hallazgo_descripcion" rows="2" required>${p.hallazgo}</textarea>
+              </div>
+
+              <!-- Evidencia -->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Evidencia (opcional)</label>
+                <input type="file" name="evidencia" class="form-control">
+              </div>
+
+              <!-- Estado -->
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select" required>
+                  <option value="Pendiente" ${p.estado=='Pendiente'?'selected':''}>Pendiente</option>
+                  <option value="En Progreso" ${p.estado=='En Progreso'?'selected':''}>En Progreso</option>
+                  <option value="Completado" ${p.estado=='Completado'?'selected':''}>Completado</option>
+                </select>
+              </div>
+
+              <!-- Botones -->
+              <div class="col-12 text-end mt-3">
+                <button type="submit" class="btn btn-success">
+                  <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+              </div>
+            </div>
+          </form>
+        `;
+
+
+        document.getElementById("contenidoEditar").innerHTML = html;
+        new bootstrap.Modal(document.getElementById("modalEditar")).show();
+      }
+    })
+    .catch(err => console.error("Error al cargar plan:", err));
+} 
+
+</script>
+
+</body>
+</html>

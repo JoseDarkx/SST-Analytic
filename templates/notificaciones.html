@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Notificaciones | Dashboard</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body class="bg-light">
+
+<!-- =====================================================
+  🔹 SIDEBAR (menú lateral)
+===================================================== -->
+<div class="sidebar" id="sidebar">
+  <button class="toggle-btn" id="toggleBtn">
+    <i class="bi bi-list"></i>
+  </button>
+
+  <h2>SST-AnalyTIC</h2>
+
+  <ul>
+    <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+    <li class="section-title">GESTIÓN PRINCIPAL</li>
+    <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+    <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+    <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+    <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+    <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+
+    <li class="section-title">ADMINISTRACIÓN</li>
+    <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+    <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+    <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+    <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+
+    <li class="section-title">GESTIÓN DE PERSONAL</li>
+    <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+    <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    <li><a href="/auth/notificaciones" class="menu-link active"><i class="bi bi-bell"></i> <span class="text">Notificaciones</span></a></li>
+  </ul>
+</div>
+
+<!-- =====================================================
+  🔹 CONTENIDO PRINCIPAL
+===================================================== -->
+<div class="content flex-grow-1" id="mainContent">
+  <!-- Barra superior -->
+  <header class="bg-light d-flex justify-content-between align-items-center px-4 py-2 border-bottom">
+    <div><strong>Panel principal / Notificaciones</strong></div>
+    <div class="text-end">
+      <div class="user-info">
+        <div id="nombreUsuario">Cargando...</div>
+        <div class="text-muted small" id="rolUsuario"></div>
+      </div>
+      <a href="/auth/logout">
+        <img src="/static/img/logout-icon.png" alt="Salir" width="18">
+      </a>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <div class="container-fluid mt-4">
+    <h3 class="mb-4">📨 Notificaciones Programadas</h3>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <table class="table table-bordered table-hover" id="tablaNotificaciones">
+          <thead class="table-light">
+            <tr>
+              <th>Documento</th>
+              <th>NIT Empresa</th>
+              <th>Fecha de Envío</th>
+              <th>Días Antes</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+  🔹 SCRIPTS
+===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Menú lateral
+  const toggleBtn = document.getElementById('toggleBtn');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+  toggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    mainContent.classList.toggle('collapsed');
+  });
+
+  // Obtener info de usuario (opcional)
+  fetch('/auth/api/usuario_actual')
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('nombreUsuario').textContent = data.nombre_completo || 'Usuario';
+      document.getElementById('rolUsuario').textContent = data.rol || '';
+    })
+    .catch(() => {
+      document.getElementById('nombreUsuario').textContent = 'Usuario';
+      document.getElementById('rolUsuario').textContent = '';
+    });
+
+  // Obtener notificaciones
+  fetch('/auth/api/notificaciones')
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.querySelector('#tablaNotificaciones tbody');
+      tbody.innerHTML = "";
+
+      if (!data.notificaciones || data.notificaciones.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No hay notificaciones programadas</td></tr>`;
+        return;
+      }
+
+      data.notificaciones.forEach(n => {
+        const fila = `
+          <tr>
+            <td>${n.documento_nombre}</td>
+            <td>${n.nit_empresa}</td>
+            <td>${n.fecha_envio}</td>
+            <td>${n.dias_antes}</td>
+          </tr>`;
+        tbody.innerHTML += fila;
+      });
+    })
+    .catch(err => console.error("Error al obtener notificaciones:", err));
+</script>
+
+</body>
+</html>

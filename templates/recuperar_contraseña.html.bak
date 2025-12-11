@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- Configuración del documento -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar Contraseña</title>
+
+  <!-- Bootstrap para estilos base y responsive -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Íconos de Bootstrap (para usar en campos de entrada) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Tu hoja de estilos personalizada desde static/css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/recuperar_contraseña.css') }}">
+</head>
+
+<!-- Usamos solo clases de Bootstrap para centrado general,
+    y el fondo lo toma desde tu CSS (.fondo-login) -->
+<body class="fondo-login d-flex justify-content-center align-items-center vh-100">
+
+  <!-- Contenedor central con tarjeta blanca y sombras -->
+  <div class="card-login p-4 shadow text-center">
+
+    <!-- Sección del logo -->
+    <div class="mb-4">
+      <!-- Asegúrate de tener este logo en /static/img/logo_gestus.png -->
+      <img src="{{ url_for('static', filename='img/Logo-sst.png') }}" alt="Logo Gestus" class="logo">
+    </div>
+
+    <!-- Título y subtítulo -->
+    <h4 class="mb-1 fw-semibold">Recuperar Contraseña</h4>
+    <p class="mb-4 text-muted">Ingrese el NIT y correo asociado para recuperar el acceso</p>
+
+    <!-- Mostrar mensajes flash del servidor (ej: error o éxito) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Formulario de recuperación -->
+    <form method="POST" class="text-start">
+
+      <!-- Campo NIT -->
+      <div class="mb-3">
+        <label for="nit_empresa" class="form-label">NIT de la empresa</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-building"></i></span>
+          <input type="text" class="form-control" id="nit_empresa" name="nit_empresa" placeholder="Ingrese el NIT" required>
+        </div>
+      </div>
+
+      <!-- Campo correo -->
+      <div class="mb-3">
+        <label for="correo" class="form-label">Correo electrónico</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control" id="correo" name="correo" placeholder="ejemplo@correo.com" required>
+        </div>
+      </div>
+
+      <!-- Botón enviar -->
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Enviar enlace</button>
+      </div>
+    </form>
+
+    <!-- Enlace para volver al inicio de sesión -->
+    <div class="text-center mt-3">
+      <a href="{{ url_for('auth.iniciar_sesion') }}">← Volver al inicio de sesión</a>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS para interacción (alertas, menú, etc.) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

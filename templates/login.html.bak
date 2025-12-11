@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión</title>
+
+    <!-- Enlace al archivo CSS externo (si existe uno adicional al estilo embebido) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+
+    <!-- Estilos CSS embebidos directamente en el HTML -->
+    <style>
+        /* Elimina márgenes y usa toda la altura disponible del navegador */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Fondo con degradado azul-verde y centrado del contenido */
+        .fondo-login {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background: linear-gradient(135deg, #0073e6, #3fc35f); /* Degradado azul-verde */
+        }
+
+        /* Contenedor blanco del formulario de login */
+        .card-login {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Sombra moderna */
+            width: 100%;
+            max-width: 400px; /* Tamaño máximo del formulario */
+        }
+
+        /* Título centrado dentro del card */
+        .card-login h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Estilo para el logo en la parte superior */
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 100px;
+        }
+
+        /* Campos de texto y contraseña */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        /* Botón de enviar (Iniciar sesión) */
+        input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #0073e6; /* Azul */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Hover sobre el botón: color más oscuro */
+        input[type="submit"]:hover {
+            background-color: #005bb5;
+        }
+
+        /* Texto centrado para enlaces */
+        p {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* Estilos de los enlaces */
+        a {
+            color: #0073e6;
+            text-decoration: none;
+        }
+
+        /* Subrayar enlace al pasar el mouse */
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Fondo con el formulario centrado -->
+    <div class="fondo-login">
+        <div class="card-login">
+
+            <!-- Logo del sistema -->
+            <img src="{{ url_for('static', filename='img/Logo-sst.png') }}" alt="Logo" class="logo">
+
+            <!-- Bloque de mensajes flash -->
+            {% with mensajes = get_flashed_messages(with_categories=true) %}            
+            {% if mensajes %}
+                {% for categoria, mensaje in mensajes %}
+                <div class="alert alert-{{ 'success' if categoria == 'success' }}" style="font-weight: bold; margin-bottom: 10px;">
+                    {{ mensaje }}
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+
+            <!-- Título del formulario -->
+            <h1>Iniciar sesión</h1>
+
+            <!-- Formulario de login -->
+            <form method="POST">
+                <!-- Campo: NIT de la empresa -->
+                <label>NIT de la empresa:</label><br>
+                <input type="text" name="nit_empresa" placeholder="Ej. 900123456" required><br>
+
+                <!-- Campo: Usuario -->
+                <label>Nombre de usuario:</label><br>
+                <input type="text" name="usuario" placeholder="Usuario" required><br>
+
+                <!-- Campo: Contraseña -->
+                <label>Contraseña:</label><br>
+                <input type="password" name="contraseña" placeholder="Contraseña" required><br>
+
+                <!-- Botón para enviar el formulario -->
+                <input type="submit" value="Iniciar sesión">
+            </form>
+
+            <!-- Enlace hacia el registro si no tiene cuenta -->
+            <p>¿No tienes una cuenta? 
+                <a href="{{ url_for('auth.registrarse') }}">Regístrate aquí</a>
+            </p>
+
+            <!-- Enlace hacia recuperación de contraseña -->
+            <p>¿Olvidó su contraseña? 
+                <a href="{{ url_for('recuperacion.recuperar_contraseña') }}">Recupérala aquí</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

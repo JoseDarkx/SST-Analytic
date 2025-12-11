@@ -1,0 +1,245 @@
+body {
+    background: linear-gradient(180deg, #dddddd 0%, #eef2f7 100%);
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =====================================================
+🔹 Sidebar (menú lateral)
+===================================================== */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(135deg, #2a5298, #1abc9c, #0dfd41);
+    color: white;
+    padding: 20px 15px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0; 
+    padding-top: 60px; /* espacio para que los íconos no queden encima del botón */
+    transition: width 0.3s ease;
+}
+
+/* Logo */
+.sidebar h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 22px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+/* Lista del menú */
+.sidebar ul {
+    list-style: none;
+    padding: 20px 0 0 0;
+    margin: 0;
+}
+
+/* Subtítulos de secciones */
+.sidebar .section-title{
+font-size: 15px;
+color: rgba(0, 0, 0, 0.9);
+opacity: 0.95;
+font-weight: 700;
+margin: 14px 0 8px;
+padding-left: 6px;
+text-transform: uppercase;
+letter-spacing: .6px;
+}
+
+/* Items de menú */
+.sidebar ul li a{
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 10px 12px;
+color: #fff;
+text-decoration: none;
+border-radius: 8px;
+transition: background .18s ease, transform .12s ease;
+font-size: 16px;
+}
+.sidebar ul li a i{ min-width: 22px; text-align: center; font-size: 18px; }
+
+/* Hover / activo */
+.sidebar ul li a:hover,
+.sidebar ul li a.active{
+background: rgba(255,255,255,0.08);
+transform: translateX(4px);
+}
+
+
+/* =====================================================
+🔹 Botón hamburguesa
+===================================================== */
+.toggle-btn {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 1001; /* siempre encima */
+    transition: color 0.3s;
+}
+
+.toggle-btn:hover {
+    color: #ddd;
+}
+
+/* =====================================================
+🔹 Sidebar colapsado
+===================================================== */
+.sidebar.collapsed{ width: var(--sidebar-collapsed); }
+.sidebar.collapsed h2,
+.sidebar.collapsed .section-title,
+.sidebar.collapsed .text { display: none; }
+.sidebar.collapsed ul li a { justify-content: center; gap: 0; padding-left: 8px; padding-right: 8px; }
+
+/* Scrollbar suave del sidebar */
+.sidebar::-webkit-scrollbar{ width: 8px; }
+.sidebar::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.06); border-radius: 8px; }
+
+
+
+/* =====================================================
+🔹 Contenido principal
+===================================================== */
+.maincontent {
+    flex: 7;
+    margin-left: 200px; 
+    padding: 20px;
+    background-color: #56575a;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+.maincontent.collapsed {
+    margin-left: 80px;
+}
+
+
+.card {
+    border-radius: 12px;
+    margin-left: 20px;
+    background-color: #000000;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Encabezado negro con bordes superiores redondeados */
+.table-light{
+    background: #000000; /* negro sólido */
+    color: #fff;
+}
+
+.table-light th {
+    font-weight: 700;
+    border: none;
+}
+
+/* Bordes redondeados solo en las esquinas superiores */
+.table thead th:first-child {
+    border-top-left-radius: 10px;
+}
+.table thead th:last-child {
+    border-top-right-radius: 10px;
+}
+
+/* Celdas del cuerpo */
+.table tbody td {
+    vertical-align: middle;
+    padding: 16px;
+}
+
+/* Filas alternadas en gris claro */
+.table-striped tbody tr:nth-of-type(odd) {
+    background: #f5f5f5;
+}
+
+/* Bordes redondeados en las esquinas inferiores */
+.table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+.table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+/* =========================
+    🔹 HEADER / TOPBAR
+========================= */
+header {
+    background: #ffffff;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+header div strong {
+    font-size: 1.1rem;
+    color: #111827;
+}
+
+/* 🔹 Información del usuario */
+header .text-end {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+header .text-end .user-info {
+    text-align: right;
+}
+
+header .text-end .user-info div:first-child {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+header .text-end .user-info div:last-child {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* 🔹 Botón logout */
+header .text-end a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    padding: 6px 10px;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+header .text-end a:hover {
+    background: #dc2626;
+}
+
+header .text-end img {
+  filter: brightness(0) invert(1); /* Hace blanco el ícono */
+}
+
+.pagination .page-link {
+    background-color:#ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #ffffff !important;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #ffffff!important;
+    color: #000000 !important;
+    border: 1px solid #ffffff !important;
+}
+
+.pagination .page-link:hover {
+    background-color: #000000!important;
+    color: white !important;
+}
+

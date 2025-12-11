@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Incidentes y Accidentes</title>
+
+    <!-- Bootstrap y SweetAlert -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/incidente.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <!-- =====================================================
+  🔹 SIDEBAR (menú lateral)
+===================================================== -->
+<div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    </ul>
+</div>
+  
+<div id="mainContent">
+<!-- Barra superior -->
+   <header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+        <div>
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Panel de Incidentes / Accidentes</strong>
+        </div>
+
+        <div class="text-end">
+            <div class="user-info">
+                <div>{{ usuario.nombre_completo }}</div>
+                <div class="text-muted small">{{ usuario.rol }}</div>
+            </div>
+            <!-- Botón logout -->
+            <a href="{{ url_for('auth.cerrar_sesion') }}">
+                <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+            </a>
+        </div>
+    </header>
+<!-- =====================================================
+  🔹 CONTENIDO PRINCIPAL
+===================================================== -->
+
+    <div class="mt-4">
+    <div class="container-fluid">
+  <div class="card">
+    <!-- Tu tabla -->
+    
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h2 class="bi bi-exclamation-triangle">Incidentes y Accidentes</h2>
+        {% if rol in ['Super Administrador', 'Administrador'] %}
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+            <i class="bi bi-plus-circle"></i> Nuevo Registro
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- FILTRO  -->
+    
+    <div class="card mb-3 p-3 shadow-sm">
+        <h5 class="mb-3">Filtros de búsqueda</h5>
+
+        <div class="row">
+            <!-- FILTRO POR CLASIFICACIÓN -->
+            <div class="col-md-4">
+                <label class="form-label">Clasificación</label>
+                <select id="filtroClasificacion" class="form-select">
+                    <option value="">-- Todas --</option>
+                    {% for inc in incidentes %}
+                        <option value="{{ inc.clasificacion }}">{{ inc.clasificacion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- FILTRO POR FECHA INICIAL -->
+            <div class="col-md-4">
+                <label class="form-label">Desde</label>
+                <input type="date" id="filtroFechaDesde" class="form-control">
+            </div>
+
+            <!-- FILTRO POR FECHA FINAL -->
+            <div class="col-md-4">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="filtroFechaHasta" class="form-control">
+            </div>
+        </div>
+    </div>
+
+
+    
+
+   <!-- Tabla de incidentes -->
+    <div class="table-responsive">
+      <table id="tablaIncidentes" class="table table-striped table-hover align-middle">
+        <thead class="table-dark text-center">
+                  <tr>
+                      <th>Tipo</th>
+                      <th>Clasificación</th>
+                      <th>Fecha</th>
+                      <th>Lugar</th>
+                      <th>Área</th>
+                      <th>Empresa</th>
+                      <th>Estado</th>
+                      <th>Personas</th>
+                      <th>Acciones</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for i in incidentes %}
+                  <tr>
+                      <td>{{ i.tipo }}</td>
+                      <td>{{ i.clasificacion or 'Sin clasificar' }}</td>
+                      <td>{{ i.fecha }}</td>
+                      <td>{{ i.lugar }}</td>
+                      <td>{{ i.area or '-' }}</td>
+                      <td>{{ i.empresa }}</td>
+                      <td>
+                          <span class="badge bg-{{ 'success' if i.estado == 'Cerrado' else 'warning' }}">
+                              {{ i.estado }}
+                          </span>
+                      </td>
+                      <td>{{ i.personas_involucradas }}</td>
+                      <td>
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-info btn-sm btn-ver"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#modalVerIncidente"
+                                  data-id="{{ i.id }}"
+                                  data-nit="{{ i.nit_empresa }}"
+                                  data-empresa="{{ i.empresa }}"
+                                  data-tipo="{{ i.tipo }}"
+                                  data-clasificacion="{{ i.clasificacion }}"
+                                  data-severidad="{{ i.severidad }}"
+                                  data-fecha="{{ i.fecha }}"
+                                  data-hora="{{ i.hora }}"
+                                  data-lugar="{{ i.lugar }}"
+                                  data-area="{{ i.area }}"
+                                  data-descripcion="{{ i.descripcion }}"
+                                  data-causas="{{ i.causas }}"
+                                  data-acciones="{{ i.acciones_inmediatas }}"
+                                  data-responsable="{{ i.responsable_investigacion_id }}"
+                                  data-estado="{{ i.estado }}"
+                                  data-archivo="{{ i.archivo_url }}"
+                                  data-personal='{{ detalle_personal[i.id]|tojson }}'>
+                              <i class="bi bi-eye"></i>
+                          </button>
+                          <!-- Botón Editar -->
+                           {% if rol in ['Super Administrador'] %}
+                           <button class="btn btn-warning btn-sm btnEditarIncidente"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarIncidente"
+                                    data-id="{{ i.id }}"
+                                    data-nit="{{ i.nit_empresa }}"
+                                    data-tipo="{{ i.tipo }}"
+                                    data-clasificacion="{{ i.clasificacion }}"
+                                    data-fecha="{{ i.fecha }}"
+                                    data-hora="{{ i.hora }}"
+                                    data-lugar="{{ i.lugar }}"
+                                    data-area="{{ i.area }}"
+                                    data-empresa="{{ i.empresa }}"
+                                    data-estado="{{ i.estado }}"
+                                    data-severidad="{{ i.severidad }}"
+                                    data-descripcion="{{ i.descripcion }}"
+                                    data-causas="{{ i.causas }}"
+                                    data-acciones="{{ i.acciones_inmediatas }}"
+                                    data-responsable="{{ i.responsable_investigacion_id }}"
+                                    data-personal='{{ detalle_personal[i.id]|tojson }}'>
+                                <i class="fas fa-edit"></i>
+                            </button> 
+                            <!-- Botón Eliminar -->
+                              {% if rol in ['Super Administrador'] %}
+                            <button class="btn btn-danger btn-sm btn-eliminar" data-id="{{ i.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                      </td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+      </div>
+  </div>
+</div>
+</div>
+
+<!-- =====================================================
+🔹 PAGINACIÓN
+===================================================== -->
+{% if total_paginas > 1 %}
+<nav aria-label="Paginación de incidentes" class="mt-3">
+    <ul class="pagination justify-content-center">
+        <!-- Botón Anterior -->
+        <li class="page-item {% if pagina_actual <= 1 %}disabled{% endif %}">
+            <a class="page-link" href="?pagina={{ pagina_actual - 1 }}">
+                <
+            </a>
+        </li>
+
+        <!-- Números de página -->
+        {% for i in range(1, total_paginas + 1) %}
+            <li class="page-item {% if i == pagina_actual %}active{% endif %}">
+                <a class="page-link" href="?pagina={{ i }}">{{ i }}</a>
+            </li>
+        {% endfor %}
+
+        <!-- Botón Siguiente -->
+        <li class="page-item {% if pagina_actual >= total_paginas %}disabled{% endif %}">
+            <a class="page-link" href="?pagina={{ pagina_actual + 1 }}">
+                >
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+<!-- ===================================================== -->
+<!-- MODAL: AGREGAR INCIDENTE COMPLETO -->
+<!-- ===================================================== -->
+<div class="modal fade" id="modalAgregar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <form id="formAgregar" method="POST" enctype="multipart/form-data" class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nuevo Incidente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-3">
+                    <!-- NIT Empresa -->
+                    <div class="col-md-6">
+                        <label class="form-label">Empresa</label>
+                        <select name="nit_empresa" id="nit_empresa" class="form-select" required
+                                {% if rol != 'Super Administrador' %} disabled {% endif %}>
+                            <option value="">Seleccione...</option>
+                            {% for e in empresas %}
+                                <option value="{{ e.nit_empresa }}">{{ e.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-select" required
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                            <option value="Accidente">Accidente</option>
+                            <option value="Incidente">Incidente</option>
+                            <option value="Casi Accidente">Casi Accidente</option>
+                        </select>
+                    </div>
+
+                    <!-- Clasificación -->
+                    <div class="col-md-6">
+                        <label class="form-label">Clasificación</label>
+                        <select name="clasificacion" class="form-select" required
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                            <option value="Leve">Leve</option>
+                            <option value="Moderado">Moderado</option>
+                            <option value="Grave">Grave</option>
+                            <option value="Fatal">Fatal</option>
+                        </select>
+                    </div>
+
+                    <!-- Severidad -->
+                    <div class="col-md-6">
+                        <label class="form-label">Severidad</label>
+                        <select name="severidad" class="form-select" required
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                            <option value="Baja">Baja</option>
+                            <option value="Media">Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control"
+                            {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %} required>
+                    </div>
+
+                    <!-- Hora -->
+                    <div class="col-md-6">
+                        <label class="form-label">Hora</label>
+                        <input type="time" name="hora" class="form-control"
+                            {% if rol != 'Super Administrador' %} disabled {% endif %} required>
+                    </div>
+
+                    <!-- Lugar -->
+                    <div class="col-md-6">
+                        <label class="form-label">Lugar</label>
+                        <input type="text" name="lugar" class="form-control"
+                            {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %} required>
+                    </div>
+
+                    <!-- Área -->
+                    <div class="col-md-6">
+                        <label class="form-label">Área</label>
+                        <input type="text" name="area" class="form-control"
+                            {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-12">
+                        <label class="form-label">Descripción del incidente</label>
+                        <textarea name="descripcion" class="form-control" rows="2"
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %} required></textarea>
+                    </div>
+
+                    <!-- Causas -->
+                    <div class="col-12">
+                        <label class="form-label">Causas</label>
+                        <textarea name="causas" class="form-control" rows="2"
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}></textarea>
+                    </div>
+
+                    <!-- Acciones inmediatas -->
+                    <div class="col-12">
+                        <label class="form-label">Acciones Inmediatas</label>
+                        <textarea name="acciones_inmediatas" class="form-control" rows="2"
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}></textarea>
+                    </div>
+
+                    <!-- Responsable de investigación -->
+                    <div class="col-md-6">
+                        <label class="form-label">Responsable de investigación</label>
+                        <select name="responsable_investigacion_id" class="form-select" required
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                            <option value="">Seleccione...</option>
+                            {% for u in usuarios %}
+                                <option value="{{ u.id }}">{{ u.nombre_completo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="col-md-6">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" class="form-select"
+                                {% if rol != 'Super Administrador' %} disabled {% endif %}>
+                            <option value="Reportado">Reportado</option>
+                            <option value="En investigación">En investigación</option>
+                            <option value="Cerrado">Cerrado</option>
+                            <option value="Archivado">Archivado</option>
+                        </select>
+                    </div>
+
+                    <!-- Archivo de evidencia -->
+                    <div class="col-md-12">
+                        <label class="form-label">Adjuntar archivo de evidencia (opcional)</label>
+                        <input type="file" name="archivo_url" class="form-control"
+                            accept=".pdf,.jpg,.png,.doc,.docx"
+                            {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                    </div>
+
+                    <hr class="mt-4 mb-3">
+
+                    <!-- Afectado principal -->
+                    <h5 class="mt-3"><i class="bi bi-person-badge"></i> Afectado principal</h5>
+                    <div class="row g-3 mt-1">
+                        <!-- Afectado -->
+                        <div class="col-md-6">
+                            <label class="form-label">Afectado</label>
+                            <select class="form-select" id="afectado_id" name="personal_id" required
+                                    {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                                <option value="">Seleccione una empresa primero</option>
+                            </select>
+                        </div>
+
+                        <!-- Tipo de afectación -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de afectación</label>
+                            <select name="tipo_afectacion" class="form-select" required
+                                    {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                                <option value="Lesionado">Lesionado</option>
+                                <option value="Testigo">Testigo</option>
+                                <option value="Responsable">Responsable</option>
+                                <option value="Afectado">Afectado</option>
+                            </select>
+                        </div>
+
+                        <!-- Descripción de la afectación -->
+                        <div class="col-12">
+                            <label class="form-label">Descripción de la afectación</label>
+                            <textarea name="descripcion_afectacion" class="form-control" rows="2"
+                                    {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}></textarea>
+                        </div>
+
+                        <!-- Requirió atención médica -->
+                        <div class="col-md-6">
+                            <label class="form-label">¿Requirió atención médica?</label>
+                            <select name="requirio_atencion" class="form-select"
+                                    {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+
+                        <!-- Tipo de atención -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de atención</label>
+                            <input type="text" name="tipo_atencion" class="form-control"
+                                placeholder="Ej: Primeros auxilios, traslado, etc."
+                                {% if rol in ['Vigia', 'COPASST'] %} disabled {% endif %}>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btnGuardarIncidente" type="button" class="btn btn-success">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<!-- MODAL: EDITAR INCIDENTE -->
+<div class="modal fade" id="modalEditarIncidente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <form id="formEditar" method="POST" enctype="multipart/form-data" class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Incidente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" name="id" id="editar_id">
+                <div class="row g-3">
+                    <!-- NIT Empresa -->
+                    <div class="col-md-6">
+                        <label class="form-label">Empresa</label>
+                        <select name="nit_empresa" id="editar_nit_empresa" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                            <option value="">Seleccione...</option>
+                            {% for e in empresas %}
+                                <option value="{{ e.nit_empresa }}">{{ e.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" id="editar_tipo" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                            <option value="Accidente">Accidente</option>
+                            <option value="Incidente">Incidente</option>
+                            <option value="Casi Accidente">Casi Accidente</option>
+                        </select>
+                    </div>
+
+                    <!-- Clasificación -->
+                    <div class="col-md-6">
+                        <label class="form-label">Clasificación</label>
+                        <select name="clasificacion" id="editar_clasificacion" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                            <option value="Leve">Leve</option>
+                            <option value="Moderado">Moderado</option>
+                            <option value="Grave">Grave</option>
+                            <option value="Fatal">Fatal</option>
+                        </select>
+                    </div>
+
+                    <!-- Severidad -->
+                    <div class="col-md-6">
+                        <label class="form-label">Severidad</label>
+                        <select name="severidad" id="editar_severidad" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                            <option value="Baja">Baja</option>
+                            <option value="Media">Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" id="editar_fecha" class="form-control" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                    </div>
+
+                    <!-- Hora -->
+                    <div class="col-md-6">
+                        <label class="form-label">Hora</label>
+                        <input type="time" name="hora" id="editar_hora" class="form-control" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                    </div>
+
+                    <!-- Lugar -->
+                    <div class="col-md-6">
+                        <label class="form-label">Lugar</label>
+                        <input type="text" name="lugar" id="editar_lugar" class="form-control" required
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                    </div>
+
+                    <!-- Área -->
+                    <div class="col-md-6">
+                        <label class="form-label">Área</label>
+                        <input type="text" name="area" id="editar_area" class="form-control"
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-12">
+                        <label class="form-label">Descripción del incidente</label>
+                        <textarea name="descripcion" id="editar_descripcion" class="form-control" rows="2" required
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}></textarea>
+                    </div>
+
+                    <!-- Causas -->
+                    <div class="col-12">
+                        <label class="form-label">Causas</label>
+                        <textarea name="causas" id="editar_causas" class="form-control" rows="2"
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}></textarea>
+                    </div>
+
+                    <!-- Acciones inmediatas -->
+                    <div class="col-12">
+                        <label class="form-label">Acciones Inmediatas</label>
+                        <textarea name="acciones_inmediatas" id="editar_acciones_inmediatas" class="form-control" rows="2"
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}></textarea>
+                    </div>
+
+                    <!-- Responsable de investigación -->
+                    <div class="col-md-6">
+                        <label class="form-label">Responsable de investigación</label>
+                        <select name="responsable_investigacion_id" id="editar_responsable_investigacion_id" class="form-select" required
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                            <option value="">Seleccione...</option>
+                            {% for u in usuarios %}
+                                <option value="{{ u.id }}">{{ u.nombre_completo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="col-md-6">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" id="editar_estado" class="form-select"
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                            <option value="Reportado">Reportado</option>
+                            <option value="En investigación">En investigación</option>
+                            <option value="Cerrado">Cerrado</option>
+                            <option value="Archivado">Archivado</option>
+                        </select>
+                    </div>
+
+                    <!-- Archivo de evidencia -->
+                    <div class="col-md-12">
+                        <label class="form-label">Adjuntar archivo de evidencia (opcional)</label>
+                        <input type="file" name="archivo_url" id="editar_archivo_url" class="form-control" accept=".pdf,.jpg,.png,.doc,.docx"
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                    </div>
+
+
+                    <hr class="mt-4 mb-3">
+
+                    <!-- Afectado principal -->
+                     {% if rol == 'Super Administrador' %}
+                    <h5 class="mt-3"><i class="bi bi-person-badge"></i> Afectado principal</h5>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Afectado</label>
+                            <select class="form-select" id="editar_afectado_id" name="personal_id" required
+                                {% if rol != 'Super Administrador' %}disabled{% endif %}>
+                                <option value="">Seleccione una empresa primero</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de afectación</label>
+                            <select name="tipo_afectacion" id="editar_tipo_afectacion" class="form-select" required
+                                {% if rol != 'Super Administrador' %}disabled{% endif %}>
+                                <option value="Lesionado">Lesionado</option>
+                                <option value="Testigo">Testigo</option>
+                                <option value="Responsable">Responsable</option>
+                                <option value="Afectado">Afectado</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción de la afectación</label>
+                            <textarea name="descripcion_afectacion" id="editar_descripcion_afectacion" class="form-control" rows="2"
+                                {% if rol != 'Super Administrador' %}disabled{% endif %}></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">¿Requirió atención médica?</label>
+                            <select name="requirio_atencion" id="editar_requirio_atencion" class="form-select"
+                                {% if rol != 'Super Administrador' %}disabled{% endif %}>
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de atención</label>
+                            <input type="text" name="tipo_atencion" id="editar_tipo_atencion" class="form-control" placeholder="Ej: Primeros auxilios, traslado, etc."
+                                {% if rol != 'Super Administrador' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btnGuardarIncidenteEditar" type="submit" class="btn btn-warning">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!--VER DETALLES-->
+<div class="modal fade" id="modalVerIncidente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title">Detalle Incidente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="contenidoModalVer">
+        <!-- Se llena con JS -->
+      </div>
+      <div class="modal-footer d-flex justify-content-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-2"></i>Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================================================== -->
+<!-- SCRIPTS -->
+<!-- ===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script para el menú hamburguesa -->
+<script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('collapsed');
+    });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const empresaSelect = document.getElementById("nit_empresa");
+    const afectadoSelect = document.getElementById("afectado_id");
+
+    empresaSelect.addEventListener("change", function () {
+        const nitEmpresa = this.value;
+        console.log("🔹 Empresa seleccionada:", nitEmpresa); // <-- Log para depuración
+
+        // Limpia las opciones anteriores mientras carga
+        afectadoSelect.innerHTML = '<option value="">Cargando...</option>';
+
+        if (nitEmpresa) {
+            fetch(`/obtener_personal/${nitEmpresa}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Error en la respuesta del servidor");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("✅ Personal recibido:", data); // <-- Log para verificar datos
+                    afectadoSelect.innerHTML = '<option value="">Seleccione el afectado</option>';
+
+                    if (data.length > 0) {
+                        data.forEach(persona => {
+                            const option = document.createElement("option");
+                            option.value = persona.id;
+                            option.textContent = persona.nombre_completo;
+                            afectadoSelect.appendChild(option);
+                        });
+                    } else {
+                        afectadoSelect.innerHTML = '<option value="">No hay personal registrado</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error("❌ Error al cargar personal:", error);
+                    afectadoSelect.innerHTML = '<option value="">Error al cargar</option>';
+                });
+        } else {
+            afectadoSelect.innerHTML = '<option value="">Seleccione una empresa primero</option>';
+        }
+    });
+});
+</script>
+
+ 
+
+<script>
+document.getElementById('btnGuardarIncidente').addEventListener('click', function() {
+  const form = document.getElementById('formAgregar');
+  const url = '/agregar_incidente';
+  const formData = new FormData(form);
+
+  fetch(url, {
+    method: 'POST',
+    body: formData,
+    credentials: 'same-origin'
+  })
+  .then(response => response.json().then(data => ({ status: response.status, body: data })))
+  .then(obj => {
+    if (obj.body.success) {
+      // ✅ Mostrar mensaje de confirmación
+      alert(obj.body.mensaje || 'Incidente registrado correctamente.');
+
+      // ✅ Cerrar el modal
+      const modalEl = document.getElementById('modalAgregar');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      // ✅ Redirigir a la vista principal después de un breve delay
+      setTimeout(() => {
+        window.location.href = '/incidentes_accidentes';
+      }, 1000); // espera 1 segundo antes de redirigir
+    } else {
+      // ⚠️ Error devuelto por el backend
+      const msg = obj.body.error || obj.body.mensaje || 'Error al registrar incidente.';
+      alert('⚠️ ' + msg);
+    }
+  })
+  .catch(err => {
+    console.error('❌ Error al enviar formulario:', err);
+    alert('Error de red al intentar registrar incidente.');
+  });
+});
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Seleccionamos todos los botones de editar
+    const botonesEditar = document.querySelectorAll(".btnEditarIncidente");
+
+    botonesEditar.forEach(boton => {
+        boton.addEventListener("click", function() {
+            // Obtener datos del botón
+            const id = this.dataset.id;
+            const nit = this.dataset.nit;
+            const tipo = this.dataset.tipo;
+            const clasificacion = this.dataset.clasificacion;
+            const fecha = this.dataset.fecha;
+            const hora = this.dataset.hora;
+            const lugar = this.dataset.lugar;
+            const area = this.dataset.area;
+            const empresa = this.dataset.empresa;
+            const estado = this.dataset.estado;
+            const severidad = this.dataset.severidad;
+            const descripcion = this.dataset.descripcion;
+            const causas = this.dataset.causas;
+            const acciones = this.dataset.acciones;
+            const responsable = this.dataset.responsable;
+
+          
+            const personal = JSON.parse(this.dataset.personal || '[]');
+
+            let tipo_afectacion = '';
+            let descripcion_afectacion = '';
+            let requirio_atencion = '';
+            let tipo_atencion = '';
+
+            if (personal.length > 0) {
+                const p = personal[0]; // Primer afectado
+                tipo_afectacion = p.tipo_afectacion || '';
+                descripcion_afectacion = p.descripcion_afectacion || '';
+                requirio_atencion = p.requirio_atencion || '';
+                tipo_atencion = p.tipo_atencion || '';
+            }
+
+            // ===== Rellenar SELECT de "Afectado" en el modal de edición =====
+            const editarSelect = document.getElementById('editar_afectado_id');
+            if (editarSelect) {
+                // limpiar
+                editarSelect.innerHTML = '';
+
+                // primera opción neutra
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = 'Seleccione el afectado';
+                editarSelect.appendChild(defaultOpt);
+
+                if (personal.length > 0) {
+                    // personal viene desde backend; en tu backend el objeto incluye `personal_id` y `nombre_afectado`
+                    personal.forEach(p => {
+                        // intentar obtener id en varias propiedades por compatibilidad
+                        const pid = p.personal_id ?? p.id ?? p.personalId ?? '';
+                        const nombre = p.nombre_afectado ?? p.nombre_completo ?? p.nombre ?? 'Sin nombre';
+
+                        const opt = document.createElement('option');
+                        opt.value = pid;
+                        opt.textContent = nombre;
+
+                        // si coincide con el primer afectado, marcar seleccionado
+                        if (personal.length > 0 && String(pid) === String(personal[0].personal_id ?? personal[0].id ?? '')) {
+                            opt.selected = true;
+                        }
+                        editarSelect.appendChild(opt);
+                    });
+                } else {
+                    const noOpt = document.createElement('option');
+                    noOpt.value = '';
+                    noOpt.textContent = 'No hay personal registrado';
+                    editarSelect.appendChild(noOpt);
+                }
+}
+
+
+            // Rellenar campos del modal
+            document.getElementById("editar_id").value = id;
+            document.getElementById("editar_nit_empresa").value = nit;
+            document.getElementById("editar_tipo").value = tipo;
+            document.getElementById("editar_clasificacion").value = clasificacion;
+            document.getElementById("editar_fecha").value = fecha;
+            document.getElementById("editar_hora").value = hora;
+            document.getElementById("editar_lugar").value = lugar;
+            document.getElementById("editar_area").value = area;
+            document.getElementById("editar_estado").value = estado;
+            document.getElementById("editar_severidad").value = severidad;
+            document.getElementById("editar_descripcion").value = descripcion;
+            document.getElementById("editar_causas").value = causas;
+            document.getElementById("editar_acciones_inmediatas").value = acciones;
+            document.getElementById("editar_responsable_investigacion_id").value = responsable;
+
+            // ⚡ Rellenar los campos de afectado
+            document.getElementById("editar_tipo_afectacion").value = tipo_afectacion;
+            document.getElementById("editar_descripcion_afectacion").value = descripcion_afectacion;
+            document.getElementById("editar_requirio_atencion").value = requirio_atencion;
+            document.getElementById("editar_tipo_atencion").value = tipo_atencion; 
+
+            // ⚡ Habilitar o bloquear campos según rol
+            const rol = "{{ rol }}"; // rol viene del backend como string
+            const esAdmin = rol === "Super Administrador" || rol === "Administrador";
+
+            const camposAdmin = [
+                "editar_nit_empresa", "editar_tipo", "editar_fecha", "editar_hora",
+                "editar_estado", "editar_responsable_investigacion_id",
+                "editar_tipo_afectacion", "editar_descripcion_afectacion",
+                "editar_requirio_atencion", "editar_tipo_atencion"
+            ];
+
+
+            camposAdmin.forEach(idCampo => {
+                const campo = document.getElementById(idCampo);
+                if(campo) campo.disabled = !esAdmin;
+            });
+        });
+    });
+});
+
+
+// Escuchar submit del formulario
+document.getElementById('formEditar').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  fetch('{{ url_for("incidentes.editar_incidente") }}', {  // <-- URL correcta
+    method: 'POST',
+    body: formData,
+    credentials: 'same-origin'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.mensaje);
+      location.reload(); // recargar listado de incidentes
+    } else {
+      alert(data.error);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Error de red al actualizar incidente.');
+  });
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  document.querySelectorAll('.btn-ver').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const m = document.getElementById('contenidoModalVer');
+      // Convertir el JSON de data-personal a array de objetos
+      const personal = JSON.parse(this.dataset.personal || '[]'); 
+
+      // Contenido general del incidente
+      let html = `
+        <p><strong>Tipo:</strong> ${this.dataset.tipo}</p>
+        <p><strong>Clasificación:</strong> ${this.dataset.clasificacion}</p>
+        <p><strong>Fecha:</strong> ${this.dataset.fecha} ${this.dataset.hora}</p>
+        <p><strong>Lugar:</strong> ${this.dataset.lugar}</p>
+        <p><strong>Área:</strong> ${this.dataset.area}</p>
+        <p><strong>Empresa:</strong> ${this.dataset.empresa} (NIT: ${this.dataset.nit})</p>
+        <p><strong>Estado:</strong> ${this.dataset.estado}</p>
+        <p><strong>Severidad:</strong> ${this.dataset.severidad}</p>
+        <p><strong>Descripción:</strong> ${this.dataset.descripcion}</p>
+        <p><strong>Causas:</strong> ${this.dataset.causas}</p>
+        <p><strong>Acciones:</strong> ${this.dataset.acciones}</p>
+        <p><strong>Responsable:</strong> ${this.dataset.responsable}</p>
+        <hr>
+        <h6>Personal involucrado:</h6>
+      `;
+
+      if(personal.length > 0){
+          html += '<ul>';
+          personal.forEach(p => {
+              html += `<li>
+                  <strong>Afectado:</strong> ${p.nombre_afectado || '-'}<br>
+                  <strong>Tipo:</strong> ${p.tipo_afectacion || '-'}<br>
+                  <strong>Descripción:</strong> ${p.descripcion_afectacion || '-'}<br>
+                  <strong>Requirió atención:</strong> ${p.requirio_atencion || '-'}<br>
+                  <strong>Tipo atención:</strong> ${p.tipo_atencion || '-'}
+              </li><hr>`;
+          });
+          html += '</ul>';
+      } else {
+          html += '<p><em>No hay personal involucrado registrado.</em></p>';
+      }
+
+      m.innerHTML = html;
+    });
+  });
+
+
+
+    // =====================================================
+    // Confirmar eliminación con SweetAlert
+    // =====================================================
+    document.querySelectorAll(".btn-eliminar").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            Swal.fire({
+                title: "¿Eliminar registro?",
+                text: "Esta acción no se puede deshacer.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Sí, eliminar",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch("/eliminar_incidente", {
+                        method: "POST",
+                        body: new URLSearchParams({ id: id }) // envía como form
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire("Eliminado", data.mensaje, "success").then(() => location.reload());
+                        } else {
+                            Swal.fire("Error", data.error || "No se pudo eliminar.", "error");
+                        }
+                    })
+                    .catch(() => Swal.fire("Error", "Ocurrió un problema al eliminar.", "error"));
+                }
+            });
+        });
+    });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const filtroClasificacion = document.getElementById("filtroClasificacion");
+    const fechaDesde = document.getElementById("filtroFechaDesde");
+    const fechaHasta = document.getElementById("filtroFechaHasta");
+
+    const tabla = document.getElementById("tablaIncidentes");
+    const filas = tabla.querySelectorAll("tbody tr");
+
+    function filtrar() {
+        const clasifVal = filtroClasificacion.value.toLowerCase();
+        const desdeVal = fechaDesde.value;
+        const hastaVal = fechaHasta.value;
+
+        filas.forEach(fila => {
+            const celdas = fila.getElementsByTagName("td");
+
+            const clasificacion = celdas[1]?.innerText.toLowerCase() || "";
+            const fecha = celdas[2]?.innerText.trim() || "";
+
+            let visible = true;
+
+            // FILTRO CLASIFICACIÓN
+            if (clasifVal && clasificacion !== clasifVal) {
+                visible = false;
+            }
+
+            // FILTRO DESDE
+            if (desdeVal && fecha < desdeVal) {
+                visible = false;
+            }
+
+            // FILTRO HASTA
+            if (hastaVal && fecha > hastaVal) {
+                visible = false;
+            }
+
+            fila.style.display = visible ? "" : "none";
+        });
+    }
+
+    filtroClasificacion.addEventListener("change", filtrar);
+    fechaDesde.addEventListener("change", filtrar);
+    fechaHasta.addEventListener("change", filtrar);
+});
+</script>
+
+
+
+
+
+
+</body>
+</html>
+

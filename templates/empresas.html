@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Empresas | SST-AnalyTIC</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/empresas.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+  </ul>
+</div>
+
+<div class="content flex-grow-1" id="mainContent">
+
+  <!-- Barra superior -->
+  <header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+    <div><strong><i class="bi bi-building"></i> Empresas / listado de empresas</strong></div>
+<div class="text-end">
+  <div class="user-info">
+    <div>{{ usuario_actual.nombre_completo }}</div>
+    <div class="text-muted small">{{ usuario_actual.rol }}</div>
+  </div>
+  <!-- Botón logout -->
+  <a href="{{ url_for('auth.cerrar_sesion') }}">
+    <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+  </a>
+</div>
+  </header>
+
+    <div class="container mt-4">
+        <div class="card shadow-sm p-4">
+            <!-- Mensajes -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+                <h2>listado de empresas</h2>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#empresaModal">
+                    <i class="bi bi-plus-circle"></i> Agregar Empresa
+                </button>
+            </div>
+
+            <!-- Formulario de búsqueda -->
+            <form method="GET" action="{{ url_for('empresas.listar_empresas') }}">
+                <div class="row mb-4">
+                    <div class="col-12 col-md-4 mb-2">
+                        <label class="form-label">Buscar por Nombre:</label>
+                        <select name="nombre" id="buscarNombre" class="form-select">
+                            <option value="">Todas las empresas</option>
+                            {% for e in empresas_opciones %}
+                                <option value="{{ e.nombre }}" {{ 'selected' if buscar_nombre == e.nombre else '' }}>
+                                    {{ e.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-4 mb-2">
+                        <label class="form-label">Buscar por NIT:</label>
+                        <input type="text" name="nit" id="buscarNIT" class="form-control" 
+                                placeholder="Ingrese NIT" 
+                                value="{{ buscar_nit or '' }}">
+                    </div>
+                    <div class="col-12 col-md-3 mb-2">
+                        <label class="form-label">Filtrar por Estado:</label>
+                        <select name="estado" id="filtrarEstado" class="form-select">
+                            <option value="">Todos los estados</option>
+                            <option value="Activa" {{ 'selected' if filtrar_estado == 'Activa' else '' }}>Activa</option>
+                            <option value="Inactiva" {{ 'selected' if filtrar_estado == 'Inactiva' else '' }}>Inactiva</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-1 mb-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success me-2">Buscar</button>
+                        {% if buscar_nombre or buscar_nit or filtrar_estado %}
+                        <a href="{{ url_for('empresas.listar_empresas') }}" class="btn btn-secondary">Limpiar</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark text-center">
+                        <tr> 
+                            <th>NIT</th>
+                            <th>Nombre</th>
+                            <th>Estado</th>
+                            <th>Certificado Representación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if empresas %}
+                            {% for empresa in empresas %}
+                            <tr>
+                                <td>{{ empresa.nit_empresa }}</td>
+                                <td>{{ empresa.nombre }}</td>
+                                <td>
+                                    {% if empresa.estado == 'Activa' %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactiva</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if empresa.certificado_representacion %}
+                                        <a href="{{ url_for('empresas.ver_certificado', nombre_archivo=empresa.certificado_representacion) }}"
+                                            class="text-primary text-decoration-none"
+                                            target="_blank">
+                                            Ver Certificado
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Sin certificado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                  <!-- Editar-->
+                                  {% if rol in ['Super Administrador', 'Administrador'] %}
+                                    <button class="btn btn-warning btn-sm"
+                                          data-bs-toggle="modal"
+                                          data-bs-target="#modalEditarEmpresa"
+                                          data-nit="{{ empresa.nit_empresa }}"
+                                          data-nombre="{{ empresa.nombre }}"
+                                          data-nombre_comercial="{{ empresa.nombre_comercial }}"
+                                          data-correo="{{ empresa.correo }}"
+                                          data-telefono="{{ empresa.telefono }}"
+                                          data-direccion="{{ empresa.direccion }}"
+                                          data-representante="{{ empresa.representante_legal }}"
+                                          data-cedula="{{ empresa.cedula_representante }}"
+                                          data-cargo="{{ empresa.cargo }}"
+                                          data-actividad="{{ empresa.actividad }}"
+                                          data-codigo_ciiu="{{ empresa.codigo_ciiu }}"
+                                          data-observaciones="{{ empresa.observaciones }}">
+                                      <i class="bi bi-pencil-square"></i>
+                                    </button>
+
+                                    <button class="btn btn-info btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalVerEmpresa"
+                                            data-nit="{{ empresa.nit_empresa }}"
+                                            data-nombre="{{ empresa.nombre }}"
+                                            data-nombre_comercial="{{ empresa.nombre_comercial }}"
+                                            data-correo="{{ empresa.correo }}"
+                                            data-telefono="{{ empresa.telefono }}"
+                                            data-direccion="{{ empresa.direccion }}"
+                                            data-representante="{{ empresa.representante_legal }}"
+                                            data-cedula="{{ empresa.cedula_representante }}"
+                                            data-cargo="{{ empresa.cargo }}"
+                                            data-actividad="{{ empresa.actividad }}"
+                                            data-codigo_ciiu="{{ empresa.codigo_ciiu }}"
+                                            data-observaciones="{{ empresa.observaciones }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+
+                                  {% endif %}
+
+
+                                    {% if empresa.estado == 'Activa' %}
+                                      <form action="{{ url_for('empresas.cambiar_estado_empresa', nit=empresa.nit_empresa, nuevo_estado='Inactiva') }}"
+                                       method="post"
+                                       style="display:inline;"
+                                       onsubmit="event.preventDefault(); mostrarModalCambioEstado('{{ empresa.nombre }}', 'Inactiva', this)">
+                                        <button type="submit" class="btn btn-danger btn-sm">Desactivar</button>
+                                       </form>
+                                    {% else %}
+                                      <form action="{{ url_for('empresas.cambiar_estado_empresa', nit=empresa.nit_empresa, nuevo_estado='Activa') }}"
+                                        method="post"
+                                        style="display:inline;"
+                                        onsubmit="event.preventDefault(); mostrarModalCambioEstado('{{ empresa.nombre }}', 'Activa', this)">
+                                        <button type="submit" class="btn btn-success btn-sm">Activar</button>
+                                      </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-muted fst-italic">
+                                    {% if buscar_nombre or buscar_nit or filtrar_estado %}
+                                        No se encontraron empresas que coincidan con los criterios de búsqueda.
+                                    {% else %}
+                                        No hay empresas registradas en el sistema.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    
+<!-- Paginación -->
+<nav aria-label="Paginación">
+  <ul class="pagination justify-content-center">
+    {% if pagina > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('empresas.listar_empresas', pagina=pagina-1, nombre=buscar_nombre, nit=buscar_nit, estado=filtrar_estado) }}"> < </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link"> < </span></li>
+    {% endif %}
+
+    {% for p in range(1, total_paginas+1) %}
+      <li class="page-item {% if p == pagina %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('empresas.listar_empresas', pagina=p, nombre=buscar_nombre, nit=buscar_nit, estado=filtrar_estado) }}">{{ p }}</a>
+      </li>
+    {% endfor %}
+
+    {% if pagina < total_paginas %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('empresas.listar_empresas', pagina=pagina+1, nombre=buscar_nombre, nit=buscar_nit, estado=filtrar_estado) }}"> > </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link"> > </span></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<!-- Registrar empresa -->
+<div class="modal fade" id="empresaModal" tabindex="-4" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered"> 
+    <div class="modal-content shadow-lg border-2">
+      
+      <!-- HEADER -->
+      <div class="modal-header text-white" 
+           style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title fw-bold">
+            <i class="bi bi-building"></i> Registro de Empresa
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+        <!-- Mensaje dentro del modal -->
+        <div id="modal-message"></div>
+          <form id="form-registro-empresa" action="{{ url_for('empresas.registro_empresa') }}" method="POST" enctype="multipart/form-data">
+
+
+          <!-- GRID -->
+          <div class="row g-4">
+            <!-- INFORMACIÓN BÁSICA -->
+            <div class="col-md-6">
+              <div class="p-3 border rounded shadow-sm">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-card-list"></i> Información Básica</h6>
+                <div class="mb-3">
+                  <label class="form-label">NIT <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="text" class="form-control border-dark" name="nit_empresa" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Razón Social <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="text" class="form-control border-dark" name="nombre" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Correo Electrónico <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="email" class="form-control border-dark" name="correo">
+                </div>
+              </div>
+            </div>
+
+            <!-- REPRESENTANTE -->
+            <div class="col-md-6">
+              <div class="p-3 border rounded shadow-sm">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-person-badge"></i> Representante Legal</h6>
+                <div class="mb-3">
+                  <label class="form-label">Nombre <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="text" class="form-control border-dark" name="representante_legal">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Cédula del Representante <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="text" class="form-control border-dark" name="cedula_representante">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Cargo <span class="campo-obligatorio">(Obligatorio)</span></label>
+                  <input type="text" class="form-control border-dark" name="cargo">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESTO DE DATOS -->
+          <div class="mt-4 p-3 border rounded shadow-sm">
+            <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-building"></i> Datos Adicionales</h6>
+            <div class="mb-3">
+              <label class="form-label">Dirección <span class="campo-obligatorio">(Obligatorio)</span></label>
+              <input type="text" class="form-control border-dark" name="direccion">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Actividad Económica <span class="campo-opcional">(Opcional)</span></label>
+              <input type="text" class="form-control border-dark" name="actividad">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Código CIIU <span class="campo-opcional">(Opcional)</span></label>
+              <input type="text" class="form-control border-dark" name="codigo_ciiu">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Observaciones <span class="campo-opcional">(Opcional)</span></label>
+              <textarea class="form-control border-dark" name="observaciones"></textarea>
+            </div>
+          </div>
+
+          <!-- DOCUMENTOS -->
+          <div class="border rounded p-3 mb-3">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-folder2-open"></i> Documentos Requeridos
+            </h6>
+
+            <div class="mb-3">
+                <label class="form-label">Certificado de Existencia y Representación Legal <span class="campo-obligatorio">(Obligatorio)</span></label>
+                <input type="file" name="certificado_representacion" class="form-control" accept=".pdf,.jpg,.png" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Logo de la Empresa <span class="campo-opcional">(Opcional)</span></label>
+                <input type="file" name="logo" class="form-control" accept=".jpg,.png,.svg">
+            </div>
+          </div>
+
+          <!-- FOOTER -->
+          <div class="d-flex justify-content-end gap-2 mt-4">
+                <button type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> Agregar empresa
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                <i class="fas fa-times"></i> Cancelar
+                </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 🏢 Modal Editar Empresa -->
+<div class="modal fade" id="modalEditarEmpresa" tabindex="-1" aria-labelledby="modalEditarEmpresaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg border-0">
+
+      <!-- Encabezado -->
+      <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title fw-bold" id="modalEditarEmpresaLabel">
+          <i class="bi bi-building me-2"></i>Editar Empresa
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <!-- Formulario -->
+      <form id="formEditarEmpresa" enctype="multipart/form-data">
+        <div class="modal-body">
+
+          <div class="row g-3">
+
+            <!-- 🔹 NIT editable solo para Super Administrador -->
+            <div class="col-md-6">
+              <label for="nit_empresa" class="form-label">NIT <span class="campo-obligatorio">*</span></label>
+              {% if rol == 'Super Administrador' %}
+                <input type="text" id="nit_empresa" name="nit_empresa" class="form-control" required>
+              {% else %}
+                <input type="text" id="nit_empresa_text" class="form-control" readonly>
+                <input type="hidden" name="nit_empresa" id="nit_empresa_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Nombre -->
+            <div class="col-md-6">
+              <label for="nombre" class="form-label">Nombre <span class="campo-obligatorio">*</span></label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="nombre" name="nombre" class="form-control" required>
+              {% else %}
+                <input type="text" id="nombre_text" class="form-control" readonly>
+                <input type="hidden" name="nombre" id="nombre_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Nombre Comercial -->
+            <div class="col-md-6">
+              <label for="nombre_comercial" class="form-label">Nombre Comercial</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="nombre_comercial" name="nombre_comercial" class="form-control">
+              {% else %}
+                <input type="text" id="nombre_comercial_text" class="form-control" readonly>
+                <input type="hidden" name="nombre_comercial" id="nombre_comercial_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Correo -->
+            <div class="col-md-6">
+              <label for="correo" class="form-label">Correo <span class="campo-obligatorio">*</span></label>
+              {% if rol in ['Super Administrador', 'Administrador'] %}
+                <input type="email" id="correo" name="correo" class="form-control" required>
+              {% else %}
+                <input type="text" id="correo_text" class="form-control" readonly>
+                <input type="hidden" name="correo" id="correo_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Teléfono -->
+            <div class="col-md-6">
+              <label for="telefono" class="form-label">Teléfono</label>
+              {% if rol in ['Super Administrador', 'Administrador'] %}
+                <input type="text" id="telefono" name="telefono" class="form-control">
+              {% else %}
+                <input type="text" id="telefono_text" class="form-control" readonly>
+                <input type="hidden" name="telefono" id="telefono_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Dirección -->
+            <div class="col-md-12">
+              <label for="direccion" class="form-label">Dirección</label>
+              {% if rol in ['Super Administrador', 'Administrador'] %}
+                <input type="text" id="direccion" name="direccion" class="form-control">
+              {% else %}
+                <input type="text" id="direccion_text" class="form-control" readonly>
+                <input type="hidden" name="direccion" id="direccion_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Representante Legal -->
+            <div class="col-md-6">
+              <label for="representante" class="form-label">Representante Legal</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="representante" name="representante_legal" class="form-control">
+              {% else %}
+                <input type="text" id="representante_text" class="form-control" readonly>
+                <input type="hidden" name="representante_legal" id="representante_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Cédula del Representante -->
+            <div class="col-md-6">
+              <label for="cedula" class="form-label">Cédula del Representante</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="cedula" name="cedula_representante" class="form-control">
+              {% else %}
+                <input type="text" id="cedula_text" class="form-control" readonly>
+                <input type="hidden" name="cedula_representante" id="cedula_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Cargo -->
+            <div class="col-md-6">
+              <label for="cargo" class="form-label">Cargo</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="cargo" name="cargo" class="form-control">
+              {% else %}
+                <input type="text" id="cargo_text" class="form-control" readonly>
+                <input type="hidden" name="cargo" id="cargo_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Actividad -->
+            <div class="col-md-6">
+              <label for="actividad" class="form-label">Actividad</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="actividad" name="actividad" class="form-control">
+              {% else %}
+                <input type="text" id="actividad_text" class="form-control" readonly>
+                <input type="hidden" name="actividad" id="actividad_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Código CIIU -->
+            <div class="col-md-6">
+              <label for="codigo_ciiu" class="form-label">Código CIIU</label>
+              {% if rol in ['Super Administrador'] %}
+                <input type="text" id="codigo_ciiu" name="codigo_ciiu" class="form-control">
+              {% else %}
+                <input type="text" id="codigo_ciiu_text" class="form-control" readonly>
+                <input type="hidden" name="codigo_ciiu" id="codigo_ciiu_hidden">
+              {% endif %}
+            </div>
+
+            <!-- 🔹 Observaciones -->
+            <div class="col-md-12">
+              <label for="observaciones" class="form-label">Observaciones</label>
+              {% if rol in ['Super Administrador', 'Administrador'] %}
+                <textarea id="observaciones" name="observaciones" class="form-control" rows="2"></textarea>
+              {% else %}
+                <textarea id="observaciones_text" class="form-control" rows="2" readonly></textarea>
+                <input type="hidden" name="observaciones" id="observaciones_hidden">
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer d-flex justify-content-end">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>Cancelar
+          </button>
+          {% if rol in ['Super Administrador', 'Administrador'] %}
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save me-1"></i>Guardar Cambios
+          </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalVerEmpresa" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Información de la Empresa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">NIT</label>
+            <input type="text" id="view-nit" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nombre</label>
+            <input type="text" id="view-nombre" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nombre comercial</label>
+            <input type="text" id="view-nombre-comercial" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Correo</label>
+            <input type="text" id="view-correo" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text" id="view-telefono" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Dirección</label>
+            <input type="text" id="view-direccion" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Representante legal</label>
+            <input type="text" id="view-representante" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cédula</label>
+            <input type="text" id="view-cedula" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cargo</label>
+            <input type="text" id="view-cargo" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Actividad</label>
+            <input type="text" id="view-actividad" class="form-control" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Código CIIU</label>
+            <input type="text" id="view-codigo-ciiu" class="form-control" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Observaciones</label>
+            <textarea id="view-observaciones" class="form-control" rows="3" readonly></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bootstrap para confirmar -->
+<div class="modal fade" id="modalConfirmarEstado" tabindex="-1" aria-labelledby="modalConfirmarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalConfirmarLabel">Confirmar cambio de estado</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="textoModalEstado"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmarEstado">Aceptar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let formPendiente = null;
+
+function mostrarModalCambioEstado(nombreEmpresa, nuevoEstado, formulario) {
+    formPendiente = formulario;
+
+    // Texto dinámico del modal
+    document.getElementById("textoModalEstado").innerText =
+        `¿Está seguro de cambiar el estado de la empresa "${nombreEmpresa}" a ${nuevoEstado}?`;
+
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmarEstado'));
+    modal.show();
+
+    // Acción al Aceptar
+    document.getElementById("btnConfirmarEstado").onclick = function() {
+        modal.hide();
+        formPendiente.submit();
+    };
+}
+</script>
+
+
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const toggleBtn = document.getElementById('toggleBtn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('collapsed');
+        });
+
+        function confirmarCambioEstado(nombreEmpresa, nuevoEstado) {
+            return confirm("¿Está seguro de cambiar el estado de la empresa '" + nombreEmpresa + "' a " + nuevoEstado + "?");
+        }
+    </script>
+    <script>
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => alert.remove());
+    }, 5000); // desaparece después de 5 segundos
+    </script>
+    <script>
+document.getElementById('form-registro-empresa').addEventListener('submit', function(e){
+    e.preventDefault();
+
+    let form = e.target;
+    let formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+    let modalMessage = document.getElementById('modal-message');
+    if (data.status === "success") {
+        modalMessage.innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">
+            ✅ ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+        form.reset();
+
+        setTimeout(() => {
+            let modal = bootstrap.Modal.getInstance(document.getElementById('empresaModal'));
+            modal.hide();
+            location.reload();
+        }, 2000);
+    } else {
+        modalMessage.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ❌ ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+    }
+})
+})
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById('modalVerEmpresa');
+  if (!modal) return;
+
+  modal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget;
+
+    const safeSet = (id, value) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if ('value' in el) el.value = value ?? '';
+      else el.innerText = value ?? '';
+    };
+
+    safeSet('view-nit', button.getAttribute('data-nit'));
+    safeSet('view-nombre', button.getAttribute('data-nombre'));
+    safeSet('view-nombre-comercial', button.getAttribute('data-nombre_comercial'));
+    safeSet('view-correo', button.getAttribute('data-correo'));
+    safeSet('view-telefono', button.getAttribute('data-telefono'));
+    safeSet('view-direccion', button.getAttribute('data-direccion'));
+    safeSet('view-representante', button.getAttribute('data-representante'));
+    safeSet('view-cedula', button.getAttribute('data-cedula'));
+    safeSet('view-cargo', button.getAttribute('data-cargo'));
+    safeSet('view-actividad', button.getAttribute('data-actividad'));
+    safeSet('view-codigo-ciiu', button.getAttribute('data-codigo_ciiu'));
+    safeSet('view-observaciones', button.getAttribute('data-observaciones'));
+  });
+});
+</script>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // 1) Cuando se abre el modal: llenamos los campos desde data-* del botón (relatedTarget)
+  const modalEl = document.getElementById('modalEditarEmpresa');
+  modalEl.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget; // Button that triggered the modal
+
+    // usamos getAttribute para no preocuparnos por conversiones de nombres
+    const nit = button.getAttribute('data-nit') || '';
+    const nombre = button.getAttribute('data-nombre') || '';
+    const nombre_comercial = button.getAttribute('data-nombre_comercial') || '';
+    const correo = button.getAttribute('data-correo') || '';
+    const telefono = button.getAttribute('data-telefono') || '';
+    const direccion = button.getAttribute('data-direccion') || '';
+    const representante = button.getAttribute('data-representante') || '';
+    const cedula = button.getAttribute('data-cedula') || '';
+    const cargo = button.getAttribute('data-cargo') || '';
+    const actividad = button.getAttribute('data-actividad') || '';
+    const codigo_ciiu = button.getAttribute('data-codigo_ciiu') || '';
+    const observaciones = button.getAttribute('data-observaciones') || '';
+
+    // Asignar a inputs del modal (asegúrate que los ids coinciden)
+    document.getElementById('nit_empresa').value = nit;
+    document.getElementById('nombre').value = nombre;
+    document.getElementById('nombre_comercial').value = nombre_comercial;
+    document.getElementById('correo').value = correo;
+    document.getElementById('telefono').value = telefono;
+    document.getElementById('direccion').value = direccion;
+    document.getElementById('representante').value = representante;
+    document.getElementById('cedula').value = cedula;
+    document.getElementById('cargo').value = cargo;
+    document.getElementById('actividad').value = actividad;
+    document.getElementById('codigo_ciiu').value = codigo_ciiu;
+    document.getElementById('observaciones').value = observaciones;
+
+    console.log("Modal editar: datos cargados para NIT=", nit);
+  });
+
+  // 2) Submit del formulario: enviamos usando fetch con fallback de rutas
+  const formEditar = document.getElementById("formEditarEmpresa");
+  formEditar.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(formEditar);
+    const nitEmpresa = document.getElementById('nit_empresa').value;
+    if (!nitEmpresa) {
+      alert("Error: no se detectó NIT. Abre el modal desde el botón editar correspondiente.");
+      return;
+    }
+
+    console.log("📦 Enviando formulario. NIT:", nitEmpresa);
+
+    // Construimos dos posibles URL según cómo esté registrado el blueprint/ruta
+    const candidateUrls = [
+      `/empresas/editar/${nitEmpresa}`,           // preferible, limpio
+      `/empresas/empresas/editar/${nitEmpresa}`  // fallback si la ruta interna incluye '/empresas' otra vez
+    ];
+
+    // Función que prueba las URLs en orden hasta obtener respuesta válida
+    async function tryPostUrls(urls) {
+      for (const url of urls) {
+        console.log("Intentando POST a:", url);
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            body: formData
+          });
+
+          console.log("Respuesta HTTP:", response.status, response.statusText);
+
+          // Si 404 -> intentar siguiente
+          if (response.status === 404) {
+            console.warn("404 en", url, "- intentando siguiente opción si existe.");
+            continue;
+          }
+
+          // si la respuesta no es OK (500, 403, etc.) -> leer texto y lanzar error
+          if (!response.ok) {
+            const txt = await response.text();
+            throw new Error(`HTTP ${response.status}: ${txt.substring(0,200)}`);
+          }
+
+          // Intentar parsear JSON
+          const text = await response.text();
+          try {
+            const data = JSON.parse(text);
+            return { url, data };
+          } catch (errJson) {
+            // Si no es JSON, devolvemos el texto para debug
+            throw new Error("Respuesta no JSON: " + text.substring(0,300));
+          }
+
+        } catch (err) {
+          console.error("Error al POSTear a", url, err);
+          // si es la última URL, relanzamos
+          if (url === urls[urls.length - 1]) throw err;
+          // si no, intentamos la siguiente URL en el for-loop
+        }
+      }
+      throw new Error("No se pudo conectar a ninguna ruta de actualización.");
+    }
+
+    // Ejecutar y manejar resultado
+    tryPostUrls(candidateUrls)
+    .then(result => {
+      console.log("Resultado del servidor:", result);
+      const data = result.data;
+      if (data.status === "success" || data.success === true) {
+        // recoger mensaje si hay, sino texto por defecto
+        const msg = data.message || data.msg || `Empresa ${nitEmpresa} actualizada con éxito.`;
+        // Cerrar modal y recargar
+        const modalInstance = bootstrap.Modal.getInstance(document.getElementById("modalEditarEmpresa"));
+        if (modalInstance) modalInstance.hide();
+        // Pequeña delay para que el modal cierre suavemente antes de recargar
+        setTimeout(() => {
+          location.reload();
+        }, 300);
+        // Opcional: mostrar notificación
+        console.log("✅ " + msg);
+      } else {
+        const errMsg = data.message || data.error || JSON.stringify(data);
+        alert("⚠️ Error al actualizar: " + errMsg);
+        console.error("Respuesta inesperada del servidor:", data);
+      }
+    })
+    .catch(err => {
+      console.error("💥 Error final al intentar actualizar empresa:", err);
+      alert("❌ Error al guardar los cambios: " + err.message);
+    });
+
+  });
+});
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,829 @@
+<!-- control_epp_reparado.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de EPP</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<!-- CSS personalizado (mantiene tu archivo) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/control_epp.css') }}">
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    </ul>
+</div>
+
+<!-- CONTENIDO -->
+<div class="content flex-grow-1" id="mainContent">
+<header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+    <div><strong><i class="bi bi-shield-check"></i> Gestion EPP</strong></div>
+    <div class="text-end">
+        <div class="user-info">
+            <div>{{ usuario_actual.nombre_completo }}</div>
+            <div class="text-muted small">{{ usuario_actual.rol }}</div>
+        </div>
+        <a href="{{ url_for('auth.cerrar_sesion') }}">
+            <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+        </a>
+    </div>
+</header>
+
+<div id="mainContent1">
+<div class="content flex-grow-1">
+<div class="container mt-4">
+
+    <!-- Botones principales -->
+    <div class="d-flex justify-content-end mb-3 gap-2">
+        {% if rol in ['Super Administrador', 'Administrador', 'Administrador Empresa'] %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAsignarEPP">
+                <i class="bi bi-plus-circle"></i> Asignar EPP
+            </button>
+        {% endif %}
+        <a href="{{ url_for('inventario.ver_inventario') }}" class="btn btn-info">
+            <i class="bi bi-box"></i> Ver Inventario
+        </a>
+        <a href="{{ url_for('epp.reporte_general_epp') }}" class="btn btn-secondary">
+            <i class="bi bi-file-earmark-bar-graph"></i> Reporte General
+        </a>
+    </div>
+
+    <!-- Card principal -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title titulo-inventario mb-3 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shield-check"></i> EPP Asignados al Personal</span>
+                <input type="text" id="searchInput" class="form-control form-control-sm w-25" placeholder="🔍 Buscar...">
+            </h5>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>Nombre del EPP</th>
+                            <th>Personal</th>
+                            <th>Fecha de Entrega</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+                            <th>Firmado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaEPP">
+                        {% if epp_asignados %}
+                            {% for asignacion in epp_asignados %}
+                                <tr data-id="{{ asignacion.id }}">
+                                    <td>{{ asignacion.nombre_epp }}</td>
+                                    <td>{{ asignacion.nombre_personal }}</td>
+                                    <td>{{ asignacion.fecha_entrega }}</td>
+                                    <td class="text-center">
+                                        {% if asignacion.estado == 'Activo' %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% elif asignacion.estado == 'En revisión' %}
+                                            <span class="badge bg-warning text-dark">En revisión</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td title="{{ asignacion.observaciones or 'Sin observaciones' }}">
+                                        {{ asignacion.observaciones or 'Sin observaciones' }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if asignacion.firmado %}
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="acciones d-flex gap-1 justify-content-center">
+                                            <!-- Ver: -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-info ver-reporte"
+                                                    data-id="{{ asignacion.personal_id }}"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalReporteEPP">
+                                                <i class="bi bi-eye text-white"></i>
+                                            </button>
+
+                                            <!-- Editar (ya tiene data- attributes) -->
+                                            {% if rol in ['Super Administrador', 'Administrador', 'Administrador Empresa'] %}
+                                                <button 
+                                                    class="btn btn-sm btn-warning"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editarEppModal"
+                                                    data-id="{{ asignacion.id }}"
+                                                    data-personal="{{ asignacion.nombre_personal }}"
+                                                    data-eppid="{{ asignacion.epp_id if asignacion.epp_id else '' }}"
+                                                    data-eppnombre="{{ asignacion.epp_nombre }}"
+                                                    data-fecha="{{ asignacion.fecha_entrega }}"
+                                                    data-estado="{{ asignacion.estado }}"
+                                                    data-observaciones="{{ asignacion.observaciones }}"
+                                                    data-firmado="{{ '1' if asignacion.firmado == 1 else '0' }}">
+                                                    <i class="fas fa-edit"></i> 
+                                                </button>
+
+                                                <!-- Eliminar (solo Super Admin) -->
+                                                {% if rol in ['Super Administrador'] %}
+                                                <button class="btn btn-sm btn-danger btn-eliminar" 
+                                                        title="Eliminar" data-id="{{ asignacion.id }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No hay EPP asignados.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Paginación de EPP -->
+<nav aria-label="Paginación de EPP" class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if pagina_actual > 1 %}
+        <li class="page-item">
+            <a class="page-link"
+            href="{{ url_for('epp.control_epp', 
+                             pagina=pagina_actual-1) }}">&lt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&lt;</span></li>
+        {% endif %}
+
+        {% for p in range(1, total_paginas + 1) %}
+        <li class="page-item {% if p == pagina_actual %}active{% endif %}">
+            <a class="page-link"
+            href="{{ url_for('epp.control_epp', 
+                             pagina=p) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+
+        {% if pagina_actual < total_paginas %}
+        <li class="page-item">
+            <a class="page-link"
+            href="{{ url_for('epp.control_epp', 
+                             pagina=pagina_actual+1) }}">&gt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&gt;</span></li>
+        {% endif %}
+    </ul>
+</nav>
+</div>
+
+<!-- ========== MODALES ========== -->
+
+<!-- Modal Editar EPP -->
+<div class="modal fade" id="editarEppModal" tabindex="-1" aria-labelledby="editarEppLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content rounded-3 shadow">
+      <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title fw-bold">Editar Asignación de EPP</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formEditarEpp" method="POST">
+        <div class="modal-body">
+
+          <!-- Nombre del trabajador -->
+          <div class="mb-3">
+            <label class="form-label">Trabajador</label>
+            <input type="text" class="form-control" id="nombre_personal" name="nombre_personal" readonly>
+          </div>
+
+          <!-- EPP -->
+          <div class="mb-3">
+            <label class="form-label">EPP Asignado</label>
+            {% if rol == 'Super Administrador' %}
+              <select class="form-select" id="epp_id_editar" name="epp_id" required>
+                <option value="">-- Seleccionar EPP --</option>
+                {% for e in epps %}
+                  <option value="{{ e.id }}">{{ e.nombre }} - {{ e.tipo_proteccion }}</option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <input type="text" class="form-control" id="epp_text" readonly>
+              <input type="hidden" name="epp_id" id="epp_id_editar_hidden">
+            {% endif %}
+          </div>
+
+          <!-- Fecha de entrega -->
+          <div class="mb-3">
+            <label class="form-label">Fecha de Entrega</label>
+            <input type="text" class="form-control" id="fecha_entrega_text" readonly>
+            <input type="hidden" name="fecha_entrega" id="fecha_entrega_hidden">
+          </div>
+
+          <!-- Estado -->
+          <div class="mb-3">
+            <label class="form-label">Estado</label>
+            {% if rol in ['Super Administrador', 'Administrador'] %}
+              <select class="form-select" id="estado" name="estado" required>
+                <option value="Asignado">Asignado</option>
+                <option value="Devuelto">Devuelto</option>
+                <option value="Requiere Reposición">Requiere Reposición</option>
+              </select>
+            {% else %}
+              <input type="text" class="form-control" id="estado_text" readonly>
+              <input type="hidden" name="estado" id="estado_hidden" value="">
+            {% endif %}
+          </div>
+
+          <!-- Observaciones -->
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea class="form-control" id="observaciones" name="observaciones" rows="2" {% if rol not in ['Super Administrador', 'Administrador', 'Administrador Empresa'] %}readonly{% endif %}></textarea>
+          </div>
+
+          <!-- Firmado -->
+          <div class="form-check mb-2">
+            {% if rol in ['Super Administrador', 'Administrador'] %}
+              <input class="form-check-input" type="checkbox" id="firmado_chk" name="firmado">
+            {% else %}
+              <input class="form-check-input" type="checkbox" id="firmado_chk" disabled>
+              <input type="hidden" name="firmado" id="firmado_hidden">
+            {% endif %}
+            <label class="form-check-label" for="firmado_chk">Firmado por el trabajador</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          {% if rol in ['Super Administrador', 'Administrador', 'Administrador Empresa'] %}
+            <button type="submit" class="btn btn-success" form="formEditarEpp">Guardar Cambios</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+    <!-- Modal Reporte EPP (contenido dinámico) -->
+    <div class="modal fade" id="modalReporteEPP" tabindex="-1" aria-labelledby="modalReporteEPPLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+            <h5 class="modal-title fw-bold"><i class="bi bi-shield-check"></i> Reporte General de EPP</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Aquí podemos mostrar info del trabajador -->
+            <div id="reporte-trabajador" class="mb-3">
+                <!-- rellenado por JS -->
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <a href="{{ url_for('epp.reporte_general_epp') }}" class="btn btn-success">Reporte General</a>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal Asignar EPP -->
+    <div class="modal fade" id="modalAsignarEPP" tabindex="-1" aria-labelledby="modalAsignarEPPLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle"></i> Asignar EPP</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <form method="POST" action="{{ url_for('epp.asignar_epp') }}" class="needs-validation" novalidate>
+            <div class="modal-body">
+            <!-- Copia fiel de tu formulario -->
+            <fieldset class="border p-3 mb-3 rounded">
+                <legend class="float-none w-auto px-2 text-dark fw-semibold">Detalles del Trabajador</legend>
+                <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="personal_id" class="form-label">Trabajador <span class="text-danger">(Obligatorio)</span></label>
+                    <select name="personal_id" id="personal_id_asignar" class="form-select" required>
+                    <option value="">Seleccione trabajador</option>
+                    {% for p in personal %}
+                        <option value="{{ p.id }}">{{ p.nombre_completo }} - {{ p.cargo }} ({{ p.empresa }})</option>
+                    {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Debe seleccionar un trabajador.</div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="epp_id" class="form-label">Tipo de EPP <span class="text-danger">(Obligatorio)</span></label>
+                    <select name="epp_id" id="epp_id_asignar" class="form-select" required>
+                        <option value="">Seleccione tipo de EPP</option>
+                        {% for e in epps %}
+                        <option value="{{ e.id }}">{{ e.nombre }} - {{ e.tipo_proteccion }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Debe seleccionar un tipo de EPP.</div>
+                </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="border p-3 mb-3 rounded">
+                <legend class="float-none w-auto px-2 text-dark fw-semibold">Datos de Entrega</legend>
+                <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="fecha_entrega" class="form-label">Fecha de Entrega <span class="text-danger">(Obligatorio)</span></label>
+                    <input type="date" class="form-control" name="fecha_entrega" id="fecha_entrega" 
+                           {% if rol != 'Super Administrador' %}min="{{ now.strftime('%Y-%m-%d') }}"{% endif %} required>
+                    <div class="invalid-feedback">Debe ingresar la fecha de entrega.</div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="estado" class="form-label">Estado <span class="text-danger">(Obligatorio)</span></label>
+                    <select name="estado" id="estado" class="form-select" required>
+                    <option value="">Seleccione estado</option>
+                    <option value="Asignado">Asignado</option>
+                    <option value="Devuelto">Devuelto</option>
+                    <option value="Requiere Reposición">Requiere Reposición</option>
+                    </select>
+                    <div class="invalid-feedback">Debe seleccionar un estado.</div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="observaciones" class="form-label">Observaciones <span class="text-secondary">(Opcional)</span></label>
+                    <input type="text" class="form-control" name="observaciones" id="observaciones" placeholder="Ej. EPP entregado sin novedades">
+                </div>
+                </div>
+            </fieldset>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="firmado_asignar" name="firmado" value="1">
+                <label class="form-check-label" for="firmado_asignar">Firmado por el trabajador <span class="text-secondary">(Opcional)</span></label>
+            </div>
+            </div>
+
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">Guardar Asignación</button>
+            </div>
+        </form>
+
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Script para mostrar flash messages -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        Swal.fire({
+                            icon: '{{ "success" if category == "success" else "error" if category == "danger" else "warning" }}',
+                            title: '{{ "¡Éxito!" if category == "success" else "Error" if category == "danger" else "Advertencia" }}',
+                            text: '{{ message }}',
+                            confirmButtonColor: '{{ "#28a745" if category == "success" else "#dc3545" }}',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+
+<script>
+    // Sidebar toggle
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    if (toggleBtn && sidebar && mainContent) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('collapsed');
+        });
+    }
+</script>
+
+<script>
+    // =====================================================
+    // Modal: EDITAR EPP - Cargar datos cuando se abre
+    // =====================================================
+document.addEventListener("DOMContentLoaded", () => {
+
+    console.log("✅ Script Editar EPP cargado correctamente");
+
+    const editarModal = document.getElementById('editarEppModal');
+    if (!editarModal) return;
+
+    editarModal.addEventListener('show.bs.modal', event => {
+        try {
+            console.log("📌 Abriendo modal EDITAR EPP");
+
+            const button = event.relatedTarget;
+
+            const id = button.getAttribute('data-id');
+            const nombre_personal = button.getAttribute('data-personal');
+            const epp_id = button.getAttribute('data-eppid');
+            const epp_nombre = button.getAttribute('data-eppnombre');
+            const fecha = button.getAttribute('data-fecha');
+            const estado = button.getAttribute('data-estado');
+            const observaciones = button.getAttribute('data-observaciones');
+            const firmado = button.getAttribute('data-firmado') === '1';
+
+            // ✅ Helper para identificar errores
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.error(`❌ No se encontró el elemento con id: ${id}`);
+                    return;
+                }
+                el.value = value ?? '';
+            };
+
+            setValue('nombre_personal', nombre_personal);
+
+            if (typeof rol !== "undefined" && rol !== 'Super Administrador') {
+                setValue('epp_text', epp_nombre);
+                setValue('epp_id_editar_hidden', epp_id);
+            } else {
+                setValue('epp_id_editar', epp_id);
+            }
+
+            setValue('fecha_entrega_text', fecha);
+            setValue('fecha_entrega_hidden', fecha);
+            setValue('estado', estado);
+            setValue('estado_hidden', estado);
+            setValue('observaciones', observaciones);
+
+            const firmadoChk = document.getElementById('firmado_chk');
+            if (firmadoChk) firmadoChk.checked = firmado;
+            else console.error("❌ No se encontró el checkbox firmado_chk");
+
+            const firmadoHidden = document.getElementById('firmado_hidden');
+            if (firmadoHidden) firmadoHidden.value = firmado ? '1' : '0';
+            else console.error("❌ No se encontró el input firmado_hidden");
+
+            const form = editarModal.querySelector('form');
+            form.action = "{{ url_for('epp.editar_epp', asignacion_id=0) }}".replace("0", id);
+
+            console.log("🔗 Form action:", form.action);
+
+        } catch (error) {
+            console.error("❌ Error al abrir modal EDITAR EPP:", error);
+        }
+    });
+
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rol = '{{ rol }}';
+
+    // =====================================================
+    // Modal: VER REPORTE EPP - Cargar datos de la asignación
+    // =====================================================
+    const verModal = document.getElementById('modalReporteEPP');
+    if (verModal) {
+        verModal.addEventListener('show.bs.modal', async event => {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            // Obtener el personal_id (pero queremos la asignación, no solo personal)
+            // Vamos a obtener de la fila de la tabla el ID de la asignación
+            const row = button.closest('tr');
+            const asignacion_id = row ? row.getAttribute('data-id') : null;
+
+            if (!asignacion_id) {
+                console.error('No se encontró el ID de asignación');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/epp/api/ver_epp/${asignacion_id}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                // Llenar el modal con los datos obtenidos
+                const reportDiv = document.getElementById('reporte-trabajador');
+                if (reportDiv) {
+                    reportDiv.innerHTML = `
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Personal:</strong> ${data.nombre_personal || '—'}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Cargo:</strong> ${data.cargo || '—'}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Empresa:</strong> ${data.empresa || '—'}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>EPP:</strong> ${data.nombre_epp || '—'}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Tipo de Protección:</strong> ${data.tipo_proteccion || '—'}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Fecha de Entrega:</strong> ${data.fecha_entrega || '—'}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Estado:</strong> <span class="badge ${
+                                    data.estado === 'Activo' ? 'bg-success' :
+                                    data.estado === 'En revisión' ? 'bg-warning' : 'bg-secondary'
+                                }">${data.estado || '—'}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Firmado:</strong> ${data.firmado ? '✅ Sí' : '❌ No'}
+                            </div>
+                        </div>
+                        ${data.observaciones ? `<div class="mt-3"><strong>Observaciones:</strong> <p>${data.observaciones}</p></div>` : ''}
+                    `;
+                }
+
+                // Llenar las tablas de entregas y novedades (si hay datos)
+                // Por ahora, dejaremos vacías (puedes expandir con más API calls si es necesario)
+
+            } catch (error) {
+                console.error('Error al cargar reporte EPP:', error);
+                Swal.fire('Error', 'No se pudieron cargar los datos del reporte', 'error');
+            }
+        });
+    }
+
+    // =====================================================
+    // Buscador en tabla
+    // =====================================================
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+        searchInput.addEventListener("keyup", function () {
+            const value = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#tablaEPP tr[data-id]");
+            rows.forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
+            });
+        });
+    }
+
+    // =====================================================
+    // Eliminar con SweetAlert2
+    // =====================================================
+    const tabla = document.querySelector('#tablaEPP');
+    if (tabla) {
+        tabla.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-eliminar');
+            if (!btn) return;
+            const id = btn.dataset.id;
+            confirmarEliminacion(id, btn);
+        });
+    }
+
+    function confirmarEliminacion(id, btn) {
+        Swal.fire({
+            title: '¿Eliminar asignación?',
+            text: "¿Estás seguro de eliminar este EPP asignado?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/epp/eliminar/${id}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Eliminado', data.message || 'Registro eliminado', 'success');
+                        const row = btn.closest('tr');
+                        if (row) row.remove();
+                    } else {
+                        Swal.fire('Error', data.error || 'No se pudo eliminar', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'Error en la petición', 'error');
+                });
+            }
+        });
+    }
+
+    // =====================================================
+    // Validación de formulario Bootstrap
+    // =====================================================
+    const forms = document.querySelectorAll('.needs-validation');
+    forms.forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+
+    // =====================================================
+    // Manejo del formulario de Asignación con SweetAlert2
+    // =====================================================
+    const formAsignar = document.querySelector('form[action*="asignar_epp"]');
+    if (formAsignar) {
+        formAsignar.addEventListener('submit', async (e) => {
+            // Permitir que la validación bootstrap se ejecute primero
+            if (!formAsignar.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+                formAsignar.classList.add('was-validated');
+                return;
+            }
+
+            e.preventDefault();
+            const formData = new FormData(formAsignar);
+
+            try {
+                const response = await fetch(formAsignar.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Mostrar SweetAlert2 de éxito
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '✅ EPP Asignado',
+                        text: 'El EPP ha sido asignado correctamente',
+                        confirmButtonColor: '#28a745',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    
+                    // Cerrar modal y recargar página
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalAsignarEPP'));
+                    if (modal) modal.hide();
+                    formAsignar.reset();
+                    formAsignar.classList.remove('was-validated');
+                    
+                    // Recargar la página después de 500ms
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    const data = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '❌ Error',
+                        text: data.message || 'No se pudo asignar el EPP',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: 'Ocurrió un error al asignar el EPP',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        });
+    }
+
+    // =====================================================
+    // Manejo del formulario de Edición con SweetAlert2
+    // =====================================================
+    const formEditar = document.getElementById('formEditarEpp');
+    if (formEditar) {
+        formEditar.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!formEditar.checkValidity()) {
+                e.stopPropagation();
+                formEditar.classList.add('was-validated');
+                return;
+            }
+
+            const formData = new FormData(formEditar);
+
+            try {
+                const response = await fetch(formEditar.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Mostrar SweetAlert2 de éxito
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '✅ EPP Actualizado',
+                        text: 'El EPP ha sido actualizado correctamente',
+                        confirmButtonColor: '#28a745',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    
+                    // Cerrar modal y recargar página
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editarEppModal'));
+                    if (modal) modal.hide();
+                    formEditar.reset();
+                    formEditar.classList.remove('was-validated');
+                    
+                    // Recargar la página después de 500ms
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    const data = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '❌ Error',
+                        text: data.message || 'No se pudo actualizar el EPP',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: 'Ocurrió un error al actualizar el EPP',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        });
+    }
+
+    // =====================================================
+    // Limpiar modales al cerrar
+    // =====================================================
+    document.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    });
+});
+</script>
+
+
+
+</body>
+</html>

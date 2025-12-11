@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error de Base de Datos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .error-header { color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 15px; }
+        .solution-list { background: #e9ecef; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-header">
+            <h1>❌ Error de Base de Datos</h1>
+            <p>No se pudo conectar a la base de datos 'gestussg'</p>
+        </div>
+        
+        <div class="solution-list">
+            <h3>🔧 Por favor verifica:</h3>
+            <ul>
+                <li>Que el servidor MySQL esté ejecutándose</li>
+                <li>Que la base de datos 'gestussg' exista</li>
+                <li>Las credenciales en <code>config.py</code> son correctas</li>
+                <li>El usuario MySQL tiene permisos sobre la base de datos</li>
+            </ul>
+        </div>
+        
+        <p><a href="/" style="color: #007bff; text-decoration: none;">← Volver al inicio</a></p>
+    </div>
+</body>
+</html>

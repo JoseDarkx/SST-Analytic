@@ -1,0 +1,223 @@
+<!-- templates/cambiar_contraseña.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambiar Contraseña - Sistema SST</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .card-recovery {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .bg-gradient-success {
+            background: linear-gradient(135deg, #2a5298, #1abc9c, #0dfd41);
+        }
+        .btn-gradient-success {
+            background: linear-gradient(135deg, #2a5298, #1abc9c, #0dfd41);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+        }
+        .btn-gradient-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+            color: #fff;
+        }
+        .password-strength {
+            height: 5px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        .strength-weak { background: #dc3545; }
+        .strength-medium { background: #ffc107; }
+        .strength-strong { background: #28a745; }
+    </style>
+</head>
+<body class="bg-light" style="background: linear-gradient(45deg, #f0f2f5 0%, #e8ebf0 100%); min-height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-6 col-lg-5">
+                <div class="card card-recovery">
+                    <div class="card-header bg-gradient-success text-white text-center py-4">
+                        <div class="mb-3">
+                            <i class="fas fa-lock fa-3x"></i>
+                        </div>
+                        <h3 class="mb-0">Cambiar Contraseña</h3>
+                    </div>
+
+                    <div class="card-body p-5">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' }} alert-dismissible fade show" role="alert">
+                                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'check-circle' }}"></i>
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" action="{{ url_for('recuperacion.cambiar_contraseña', token=token) }}" id="cambiarPasswordForm" class="needs-validation" novalidate>
+                            <div class="mb-4">
+                                <label for="nueva_contraseña" class="form-label fw-semibold">
+                                    <i class="fas fa-key text-success"></i> Nueva Contraseña
+                                </label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control form-control-lg" id="nueva_contraseña" 
+                                           name="nueva_contraseña" required minlength="6" 
+                                           placeholder="Mínimo 6 caracteres">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword1">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength mt-2" id="strengthBar"></div>
+                                <div class="form-text" id="strengthText"></div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="confirmar_contraseña" class="form-label fw-semibold">
+                                    <i class="fas fa-check text-success"></i> Confirmar Contraseña
+                                </label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control form-control-lg" id="confirmar_contraseña" 
+                                           name="confirmar_contraseña" required minlength="6" 
+                                           placeholder="Repita la nueva contraseña">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text" id="passwordMatch"></div>
+                            </div>
+                            
+                            <div class="d-grid mb-4">
+                                <button type="submit" class="btn btn-gradient-success btn-lg" id="submitBtn">
+                                    <i class="fas fa-save"></i> Actualizar Contraseña
+                                </button>
+                            </div>
+                        </form>
+
+                        <a href="{{ url_for('auth.iniciar_sesion') }}" class="d-block text-center mt-3 text-decoration-none text-primary">
+                            <i class="fas fa-arrow-left"></i> Volver al inicio de sesión
+                        </a>
+
+                        <div class="alert alert-warning border-0 mt-4" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);">
+                            <div class="d-flex">
+                                <i class="fas fa-info-circle text-warning me-3 mt-1"></i>
+                                <div>
+                                    <strong>Importante:</strong>
+                                    <p class="mb-0 mt-1">Después de cambiar tu contraseña, deberás iniciar sesión nuevamente con las nuevas credenciales.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Control de visibilidad de contraseñas
+        function togglePasswordVisibility(toggleButtonId, passwordFieldId) {
+            document.getElementById(toggleButtonId).addEventListener('click', function() {
+                const password = document.getElementById(passwordFieldId);
+                const icon = this.querySelector('i');
+                if (password.type === 'password') {
+                    password.type = 'text';
+                    icon.className = 'fas fa-eye-slash';
+                } else {
+                    password.type = 'password';
+                    icon.className = 'fas fa-eye';
+                }
+            });
+        }
+
+        togglePasswordVisibility('togglePassword1', 'nueva_contraseña');
+        togglePasswordVisibility('togglePassword2', 'confirmar_contraseña');
+
+        // Medidor de fortaleza
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 6) strength++;
+            if (password.length >= 10) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^A-Za-z\d]/.test(password)) strength++;
+
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+
+            switch (strength) {
+                case 0:
+                case 1:
+                    strengthBar.className = 'password-strength strength-weak';
+                    strengthBar.style.width = '33%';
+                    strengthText.textContent = 'Contraseña débil';
+                    strengthText.className = 'form-text text-danger';
+                    break;
+                case 2:
+                case 3:
+                    strengthBar.className = 'password-strength strength-medium';
+                    strengthBar.style.width = '66%';
+                    strengthText.textContent = 'Contraseña media';
+                    strengthText.className = 'form-text text-warning';
+                    break;
+                default:
+                    strengthBar.className = 'password-strength strength-strong';
+                    strengthBar.style.width = '100%';
+                    strengthText.textContent = 'Contraseña fuerte';
+                    strengthText.className = 'form-text text-success';
+                    break;
+            }
+        }
+
+        // Validación de contraseñas
+        const form = document.getElementById('cambiarPasswordForm');
+        const password1 = document.getElementById('nueva_contraseña');
+        const password2 = document.getElementById('confirmar_contraseña');
+        const matchText = document.getElementById('passwordMatch');
+        const submitBtn = document.getElementById('submitBtn');
+
+        password1.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            validatePasswords();
+        });
+
+        function validatePasswords() {
+            if (password1.value && password2.value) {
+                if (password1.value === password2.value) {
+                    matchText.innerHTML = '<i class="fas fa-check text-success"></i> Las contraseñas coinciden';
+                    matchText.className = 'form-text text-success';
+                    submitBtn.disabled = false;
+                } else {
+                    matchText.innerHTML = '<i class="fas fa-times text-danger"></i> Las contraseñas no coinciden';
+                    matchText.className = 'form-text text-danger';
+                    submitBtn.disabled = true;
+                }
+            } else {
+                matchText.innerHTML = '';
+                submitBtn.disabled = password1.value.length < 6;
+            }
+        }
+
+        password2.addEventListener('input', validatePasswords);
+
+        form.addEventListener('submit', function(e) {
+            if (password1.value !== password2.value || password1.value.length < 6) {
+                e.preventDefault();
+                alert('Verifica que las contraseñas coincidan y tengan mínimo 6 caracteres.');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+:root {
+    --sidebar-width: 260px;
+    --sidebar-collapsed: 80px;
+}
+
+/* ===== Reset / base ===== */
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    color:#222;
+}
+
+/* ===== Main content animado ===== */
+#mainContent {
+    margin-left: 260px; /* mismo valor que el ancho del sidebar */
+    transition: margin-left 0.28s ease;
+    min-height:100vh;
+}
+#mainContent.collapsed{ margin-left: var(--sidebar-collapsed); }
+
+/* ============================
+MOBILE BEHAVIOR
+   ============================ */
+.mobile-header{ display:flex; align-items:center; gap:8px; }
+
+/* En pantallas pequeñas el sidebar se oculta */
+@media (max-width: 768px){
+    .sidebar{ left: -100%; width: var(--sidebar-width); }
+    .sidebar.active{ left: 0; }
+    #mainContent, #mainContent.collapsed{ margin-left: 0; }
+    .toggle-btn{ right: 10px; top: 10px; }
+}
+
+/* ============================
+VISUALES (cards, tablas, etc.)
+   ============================ */
+.card{ border:none; box-shadow:0 3px 10px rgba(0,0,0,0.05); border-radius:10px; }
+.table thead{ background-color:#e9ecef; font-weight:700; }
+.table td, .table th{ vertical-align:middle !important; padding:12px 15px; }
+
+/* Badges */
+.badge{ font-size:0.85rem; padding:6px 10px; border-radius:12px; }
+
+/* Ajustes responsive */
+@media (max-width: 768px){
+    .container{ padding: 12px; }
+}

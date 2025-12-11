@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>solicitudes Contraseña</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/solicitudes_contraseña.css') }}">
+</head>
+<body>
+
+<!-- =====================================================
+🔹 SIDEBAR
+===================================================== -->
+
+<div class="sidebar" id="sidebar">
+    <button class="toggle-btn" id="toggleBtn"><i class="bi bi-list"></i></button>
+    <h2>SST-AnalyTIC</h2>
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+  </ul>
+
+
+</div>
+<div class="content flex-grow-1" id="mainContent">
+
+<!-- Barra superior --> 
+<header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+    <div><strong><i class="bi bi-key"></i> Solicitudes de contraseña</strong></div>
+<div class="text-end">
+<div class="user-info">
+    <div>{{ usuario_actual.nombre_completo }}</div>
+    <div class="text-muted small">{{ usuario_actual.rol }}</div>
+</div>
+<!-- Botón logout -->
+<a href="{{ url_for('auth.cerrar_sesion') }}">
+    <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+</a>
+</div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div id="mainContent"> 
+    <div class="container py-4">
+        <div class="card shadow-sm p-4">
+                <!-- Título y estadísticas rápidas -->
+                <div class="row mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="mb-0">
+                                <i class="fas fa-key text-primary"></i>
+                                Solicitudes de Recuperación de Contraseña
+                            </h2>
+                            <button class="btn btn-outline-success" onclick="location.reload()">
+                                <i class="fas fa-sync-alt"></i> Actualizar
+                            </button>
+                        </div>
+                        
+                        <!-- Estadísticas rápidas -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card stats-card pending">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                        <h4 id="statPendientes" class="mb-0">0</h4>
+                                        <small class="text-muted">Pendientes</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card completed">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                        <h4 id="statAtendidas" class="mb-0">0</h4>
+                                        <small class="text-muted">Atendidas</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card user-completed">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-check fa-2x text-info mb-2"></i>
+                                        <h4 id="statUsuarios" class="mb-0">0</h4>
+                                        <small class="text-muted">Por Usuario</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stats-card" style="border-left-color: #6f42c1;">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calendar-day fa-2x text-purple mb-2"></i>
+                                        <h4 id="statHoy" class="mb-0">0</h4>
+                                        <small class="text-muted">Hoy</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                </div>
+
+                <!-- Panel principal -->
+                <div class="row">
+                        <div class="card card-admin">
+                            <div class="card-header bg-black text-white py-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-table"></i> Lista de Solicitudes
+                                        </h5>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i>
+                                            Actualización automática cada 30 segundos
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- Mensajes flash -->
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                        {% for category, message in messages %}
+                                            <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'warning' if category == 'warning' else 'info' }} alert-dismissible fade show" role="alert">
+                                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'check-circle' if category == 'success' else 'exclamation-circle' if category == 'warning' else 'info-circle' }}"></i>
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endwith %}
+
+                                <!-- Filtros -->
+                                <div class="row mb-4">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Filtrar por Estado:</label>
+                                        <select class="form-select" id="filtroEstado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="Pendiente">⏳ Pendiente</option>
+                                            <option value="Atendida">✅ Atendida</option>
+                                            <option value="Atendida por usuario">👤 Atendida por usuario</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Buscar por Correo:</label>
+                                        <input type="text" class="form-control" id="filtroCorreo" placeholder="usuario@empresa.com">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Buscar por NIT:</label>
+                                        <input type="text" class="form-control" id="filtroNIT" placeholder="123456789">
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                                            <i class="fas fa-eraser"></i> Limpiar Filtros
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de solicitudes -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle" id="tablaSolicitudes">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th width="8%">
+                                                    <i class="fas fa-hashtag"></i> ID
+                                                </th>
+                                                <th width="15%">
+                                                    <i class="fas fa-building"></i> NIT Empresa
+                                                </th>
+                                                <th width="20%">
+                                                    <i class="fas fa-user"></i> Usuario
+                                                </th>
+                                                <th width="20%">
+                                                    <i class="fas fa-envelope"></i> Correo
+                                                </th>
+                                                <th width="15%">
+                                                    <i class="fas fa-calendar"></i> Fecha Solicitud
+                                                </th>
+                                                <th width="12%">
+                                                    <i class="fas fa-flag"></i> Estado
+                                                </th>
+                                                <th width="10%">
+                                                    <i class="fas fa-cogs"></i> Acciones
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for solicitud in solicitudes %}
+                                            <tr data-estado="{{ solicitud.estado }}" data-correo="{{ solicitud.correo }}" data-nit="{{ solicitud.nit_empresa }}">
+                                                <td class="fw-bold text-primary">#{{ solicitud.id }}</td>
+                                                <td>
+                                                    <span class="font-monospace">{{ solicitud.nit_empresa }}</span>
+                                                </td>
+                                                <td>
+                                                    {% if solicitud.nombre_completo %}
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                                {{ solicitud.nombre_completo[:2].upper() }}
+                                                            </div>
+                                                            <span>{{ solicitud.nombre_completo }}</span>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-muted">
+                                                            <i class="fas fa-question-circle"></i> Usuario no encontrado
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="mailto:{{ solicitud.correo }}" class="text-decoration-none">
+                                                        {{ solicitud.correo }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <div>
+                                                        <div class="fw-semibold">
+                                                            {{ solicitud.fecha_solicitud.strftime('%d/%m/%Y') if solicitud.fecha_solicitud else 'N/A' }}
+                                                        </div>
+                                                        <small class="text-muted">
+                                                            {{ solicitud.fecha_solicitud.strftime('%H:%M') if solicitud.fecha_solicitud else '' }}
+                                                        </small>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {% if solicitud.estado == 'Pendiente' %}
+                                                        <span class="badge badge-status bg-warning text-dark">
+                                                            <i class="fas fa-clock"></i> Pendiente
+                                                        </span>
+                                                    {% elif solicitud.estado == 'Atendida' %}
+                                                        <span class="badge badge-status bg-success">
+                                                            <i class="fas fa-check"></i> Atendida
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge badge-status bg-info">
+                                                            <i class="fas fa-user"></i> Por Usuario
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if solicitud.estado == 'Pendiente' %}
+                                                        <button class="btn btn-primary btn-action btn-sm" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#modalCambiarPassword" 
+                                                                data-solicitud-id="{{ solicitud.id }}"
+                                                                data-correo="{{ solicitud.correo }}"
+                                                                data-usuario="{{ solicitud.nombre_completo or 'Usuario' }}">
+                                                            <i class="fas fa-key"></i> Cambiar
+                                                        </button>
+                                                    {% else %}
+                                                        <span class="text-success">
+                                                            <i class="fas fa-check-circle"></i>
+                                                            <small>Completada</small>
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% else %}
+                                            <tr>
+                                                <td colspan="7" class="text-center py-5 text-muted">
+                                                    <div class="py-4">
+                                                        <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                                                        <h5>No hay solicitudes registradas</h5>
+                                                        <p class="mb-0">Las solicitudes de recuperación aparecerán aquí cuando los usuarios las generen.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            
+
+            <!-- Modal para cambiar contraseña -->
+            <div class="modal fade" id="modalCambiarPassword" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="modalLabel">
+                                <i class="fas fa-key"></i> Cambiar Contraseña de Usuario
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" id="formCambiarPassword">
+                            <div class="modal-body">
+                                <input type="hidden" name="solicitud_id" id="solicitudId">
+                                
+                                <div class="alert alert-info border-0 mb-4">
+                                    <div class="d-flex">
+                                        <i class="fas fa-info-circle me-3 mt-1"></i>
+                                        <div>
+                                            <strong>Información del Usuario:</strong>
+                                            <p class="mb-0 mt-1">
+                                                <strong>Usuario:</strong> <span id="nombreUsuario"></span><br>
+                                                <strong>Correo:</strong> <span id="correoUsuario"></span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="nueva_contrasena" class="form-label fw-semibold">
+                                        <i class="fas fa-lock"></i> Nueva Contraseña:
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" name="nueva_contrasena" id="nueva_contrasena" 
+                                            required minlength="6" placeholder="Mínimo 6 caracteres">
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleModalPassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-shield-alt"></i> La contraseña debe tener al menos 6 caracteres
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-warning border-0">
+                                    <div class="d-flex">
+                                        <i class="fas fa-exclamation-triangle me-3 mt-1"></i>
+                                        <div>
+                                            <strong>⚠️ Atención:</strong>
+                                            <ul class="mb-0 mt-1">
+                                                <li>La contraseña se cambiará inmediatamente</li>
+                                                <li>El usuario podrá iniciar sesión con la nueva contraseña</li>
+                                                <li>Se marcará la solicitud como "Atendida"</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Cambiar Contraseña
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+    </div>
+</div>            
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+            <script>
+                // Configuración del modal
+                const modal = document.getElementById('modalCambiarPassword');
+                modal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const solicitudId = button.getAttribute('data-solicitud-id');
+                    const correo = button.getAttribute('data-correo');
+                    const usuario = button.getAttribute('data-usuario');
+                    
+                    document.getElementById('solicitudId').value = solicitudId;
+                    document.getElementById('correoUsuario').textContent = correo;
+                    document.getElementById('nombreUsuario').textContent = usuario;
+                    document.getElementById('nueva_contrasena').value = '';
+                    
+                    // Focus en el campo de contraseña
+                    setTimeout(() => {
+                        document.getElementById('nueva_contrasena').focus();
+                    }, 300);
+                });
+
+                // Toggle password visibility en modal
+                document.getElementById('toggleModalPassword').addEventListener('click', function() {
+                    const password = document.getElementById('nueva_contrasena');
+                    const icon = this.querySelector('i');
+                    if (password.type === 'password') {
+                        password.type = 'text';
+                        icon.className = 'fas fa-eye-slash';
+                    } else {
+                        password.type = 'password';
+                        icon.className = 'fas fa-eye';
+                    }
+                });
+
+                // Validación del formulario del modal
+                document.getElementById('formCambiarPassword').addEventListener('submit', function(e) {
+                    const password = document.getElementById('nueva_contrasena').value;
+                    if (password.length < 6) {
+                        e.preventDefault();
+                        alert('La contraseña debe tener al menos 6 caracteres');
+                        return false;
+                    }
+                    
+                    if (!confirm('¿Estás seguro de cambiar la contraseña de este usuario?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+
+                // Sistema de filtros
+                function filtrarTabla() {
+                    const filtroEstado = document.getElementById('filtroEstado').value.toLowerCase();
+                    const filtroCorreo = document.getElementById('filtroCorreo').value.toLowerCase();
+                    const filtroNIT = document.getElementById('filtroNIT').value.toLowerCase();
+                    const filas = document.querySelectorAll('#tablaSolicitudes tbody tr');
+
+                    let visibleCount = 0;
+
+                    filas.forEach(fila => {
+                        // Skip si es la fila de "no hay datos"
+                        if (fila.cells.length === 1) return;
+
+                        const estado = fila.getAttribute('data-estado').toLowerCase();
+                        const correo = fila.getAttribute('data-correo').toLowerCase();
+                        const nit = fila.getAttribute('data-nit').toLowerCase();
+                        
+                        const mostrarPorEstado = filtroEstado === '' || estado.includes(filtroEstado);
+                        const mostrarPorCorreo = filtroCorreo === '' || correo.includes(filtroCorreo);
+                        const mostrarPorNIT = filtroNIT === '' || nit.includes(filtroNIT);
+                        
+                        const mostrar = mostrarPorEstado && mostrarPorCorreo && mostrarPorNIT;
+                        fila.style.display = mostrar ? '' : 'none';
+                        
+                        if (mostrar) visibleCount++;
+                    });
+
+                    // Actualizar contadores después de filtrar
+                    actualizarEstadisticas();
+                }
+
+                // Event listeners para filtros
+                document.getElementById('filtroEstado').addEventListener('change', filtrarTabla);
+                document.getElementById('filtroCorreo').addEventListener('input', filtrarTabla);
+                document.getElementById('filtroNIT').addEventListener('input', filtrarTabla);
+
+                function limpiarFiltros() {
+                    document.getElementById('filtroEstado').value = '';
+                    document.getElementById('filtroCorreo').value = '';
+                    document.getElementById('filtroNIT').value = '';
+                    filtrarTabla();
+                }
+
+                // Actualizar estadísticas
+                function actualizarEstadisticas() {
+                    const filas = document.querySelectorAll('#tablaSolicitudes tbody tr:not([style*="display: none"])');
+                    let pendientes = 0, atendidas = 0, porUsuario = 0, hoy = 0;
+                    
+                    const fechaHoy = new Date().toLocaleDateString('es-ES');
+
+                    filas.forEach(fila => {
+                        if (fila.cells.length === 1) return; // Skip empty row
+                        
+                        const estado = fila.getAttribute('data-estado');
+                        const fechaCell = fila.cells[4].textContent;
+                        
+                        switch(estado) {
+                            case 'Pendiente': pendientes++; break;
+                            case 'Atendida': atendidas++; break;
+                            case 'Atendida por usuario': porUsuario++; break;
+                        }
+                        
+                        if (fechaCell.includes(fechaHoy.split('/').reverse().join('/'))) {
+                            hoy++;
+                        }
+                    });
+
+                    document.getElementById('statPendientes').textContent = pendientes;
+                    document.getElementById('statAtendidas').textContent = atendidas;
+                    document.getElementById('statUsuarios').textContent = porUsuario;
+                    document.getElementById('statHoy').textContent = hoy;
+                }
+
+                // Generar contraseña aleatoria (función auxiliar)
+                function generarPasswordAleatoria() {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    let result = '';
+                    for (let i = 0; i < 8; i++) {
+                        result += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return result;
+                }
+
+                // Botón para generar contraseña aleatoria (opcional)
+                function agregarBotonGenerarPassword() {
+                    const passwordInput = document.getElementById('nueva_contrasena');
+                    const generateBtn = document.createElement('button');
+                    generateBtn.type = 'button';
+                    generateBtn.className = 'btn btn-outline-info btn-sm mt-2';
+                    generateBtn.innerHTML = '<i class="fas fa-random"></i> Generar Contraseña';
+                    generateBtn.onclick = function() {
+                        const newPassword = generarPasswordAleatoria();
+                        passwordInput.value = newPassword;
+                        
+                        // Mostrar la contraseña generada temporalmente
+                        passwordInput.type = 'text';
+                        setTimeout(() => {
+                            if (passwordInput.type === 'text') {
+                                passwordInput.type = 'password';
+                                document.getElementById('toggleModalPassword').querySelector('i').className = 'fas fa-eye';
+                            }
+                        }, 3000);
+                        
+                        // Copiar al clipboard
+                        navigator.clipboard.writeText(newPassword).then(() => {
+                            // Mostrar feedback visual
+                            generateBtn.innerHTML = '<i class="fas fa-check"></i> Copiada';
+                            generateBtn.className = 'btn btn-success btn-sm mt-2';
+                            setTimeout(() => {
+                                generateBtn.innerHTML = '<i class="fas fa-random"></i> Generar Contraseña';
+                                generateBtn.className = 'btn btn-outline-info btn-sm mt-2';
+                            }, 2000);
+                        });
+                    };
+                    
+                    // Agregar el botón después del input
+                    passwordInput.parentNode.insertAdjacentElement('afterend', generateBtn);
+                }
+
+                // Auto-refresh cada 30 segundos (solo si no hay modal abierto)
+                setInterval(function() {
+                    if (!document.querySelector('.modal.show')) {
+                        // Solo recargar si hay cambios (opcional: implementar polling AJAX)
+                        // location.reload();
+                        
+                        // Alternativa: polling AJAX para solo actualizar datos nuevos
+                        // checkForUpdates();
+                    }
+                }, 30000);
+
+                // Función para verificar actualizaciones sin recargar página completa
+                function checkForUpdates() {
+                    fetch('/recuperacion/api/solicitudes')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                // Comparar y actualizar solo si hay cambios
+                                updateTableIfNeeded(data.data);
+                            }
+                        })
+                        .catch(error => console.log('Error checking updates:', error));
+                }
+
+                // Inicializar estadísticas al cargar
+                document.addEventListener('DOMContentLoaded', function() {
+                    actualizarEstadisticas();
+                    agregarBotonGenerarPassword();
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', function(e) {
+                    // Ctrl + R = Reload
+                    if (e.ctrlKey && e.key === 'r') {
+                        e.preventDefault();
+                        location.reload();
+                    }
+                    
+                    // Esc = Close modal
+                    if (e.key === 'Escape') {
+                        const openModal = document.querySelector('.modal.show');
+                        if (openModal) {
+                            bootstrap.Modal.getInstance(openModal).hide();
+                        }
+                    }
+                });
+
+                // Tooltip para botones (opcional)
+                document.addEventListener('DOMContentLoaded', function() {
+                    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                        return new bootstrap.Tooltip(tooltipTriggerEl);
+                    });
+                });
+
+                document.addEventListener("DOMContentLoaded", function() {
+                    const sidebar = document.querySelector(".sidebar");
+                    const sidebarToggle = document.getElementById("sidebarToggle");
+                    const overlay = document.querySelector(".sidebar-overlay");
+
+                    if(sidebarToggle){
+                        sidebarToggle.addEventListener("click", () => {
+                            sidebar.classList.toggle("active");
+                            overlay.classList.toggle("show");
+                        });
+                    }
+
+                    overlay.addEventListener("click", () => {
+                        sidebar.classList.remove("active");
+                        overlay.classList.remove("show");
+                    });
+                });
+            </script>
+            </script>
+<!-- Script para el menú hamburguesa -->
+    <script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('collapsed');
+    });
+</script>
+</body>
+</html>

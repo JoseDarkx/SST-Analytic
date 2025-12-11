@@ -1,0 +1,32 @@
+    /* Fondo con degradado */
+    .fondo-login {
+    background: linear-gradient(135deg, #0073e6, #3fc35f);
+    }
+
+    /* Contenedor blanco con diseño UX */
+    .card-login {
+    background-color: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    }
+
+    /* Logo */
+    .logo {
+    width: 100px;
+    }
+
+    /* Botón azul Gestus */
+    .btn-primary {
+    background-color: #0073e6;
+    border-color: #0073e6;
+    }
+
+    .btn-primary:hover {
+    background-color: #005bb5;
+    }
+
+    /* Estética extra */
+    .input-group-text {
+    background-color: #f0f0f0;
+    }

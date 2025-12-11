@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Capacitaciones | SST-AnalyTIC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/capacitaciones.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+      <li><a href="/auth/notificaciones" class="menu-link"><i class="bi bi-bell"></i> <span class="text">Notificaciones</span></a></li>
+    </ul>
+</div>
+
+<!-- CONTENIDO -->
+<div class="content flex-grow-1" id="mainContent">
+<header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+    <div><strong><i class="bi bi-book"></i> Capacitaciones / Evaluaciones Capacitaciones</strong></div>
+    <div class="text-end">
+        <div class="user-info">
+            <div>{{ usuario_actual.nombre_completo }}</div>
+            <div class="text-muted small">{{ usuario_actual.rol }}</div>
+        </div>
+        <a href="{{ url_for('auth.cerrar_sesion') }}">
+            <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+        </a>
+    </div>
+</header>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div id="mainContent">
+    <div class="container mt-4">
+        <!-- Encabezado -->
+        <div class="card shadow-sm p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="mb-0">Listado de Capacitaciones</h2>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('capacitaciones.evaluacion_capacitacion') }}" class="btn btn-primary" >
+                      <i class="fas fa-graduation-cap"></i> Ver Evaluaciones
+                    </a>
+
+                    <a href="{{ url_for('capacitaciones.reporte_capacitaciones') }}" class="btn btn-secondary">
+                      <i class="bi bi-file-earmark-bar-graph"></i> Reporte
+                    </a>
+                    {% if rol in ['Super Administrador'] %}
+                      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCapacitacion">
+                          <i class="bi bi-plus-circle"></i> Nueva Capacitación
+                      </button>
+                    {% endif %}
+                    <button class="btn btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#filtros">
+                        <i class="bi bi-funnel"></i> Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="collapse mb-4" id="filtros">
+            <div class="card card-body">
+                <form method="GET" class="row g-3">
+                  <div class="col-md-4">
+                      {% if rol not in ['Super Administrador'] %}
+                        <label class="form-label">Empresa</label>
+                        <select name="empresa" class="form-select">
+                          {% endif %}
+                            <option value="">Todas las empresas</option>
+                            {% for empresa in empresas %}
+                            <option value="{{ empresa.nit_empresa }}" {% if request.args.get('empresa') == (empresa.nit_empresa|string) %}selected{% endif %}>
+                                {{ empresa.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                      </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" class="form-select">
+                            <option value="">Todos los estados</option>
+                            <option value="Programada" {% if request.args.get('estado') == 'Programada' %}selected{% endif %}>Programada</option>
+                            <option value="En curso" {% if request.args.get('estado') == 'En curso' %}selected{% endif %}>En curso</option>
+                            <option value="Terminada" {% if request.args.get('estado') == 'Terminada' %}selected{% endif %}>Terminada</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Desde</label>
+                        <input type="date" name="fecha_desde" class="form-control" value="{{ request.args.get('fecha_desde', '') }}">
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-outline-secondary me-2">Filtrar</button>
+                        <a href="/capacitaciones" class="btn btn-outline-danger">Limpiar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white text-center p-3">
+                    <h4>{{ capacitaciones|length }}</h4>
+                    <p>Total Capacitaciones</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white text-center p-3">
+                    <h4>{{ capacitaciones|selectattr('estado', 'equalto', 'Programada')|list|length }}</h4>
+                    <p>Programadas</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card bg-success text-white text-center p-3">
+                    <h4>{{ capacitaciones|selectattr('estado', 'equalto', 'Aprobada')|list|length }}</h4>
+                    <p>Terminadas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de capacitaciones -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark text-center">
+              <tr>
+                <th>Nit Empresa</th>
+                <th>Tema</th>
+                <th>Fecha</th>
+                <th>Responsable</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if capacitaciones %}
+                {% for capacitacion in capacitaciones %}
+                <tr>
+                  <td>{{ capacitacion.nit_empresa }}</td>
+                  <td>{{ capacitacion.tema }}</td>
+                  <td>{{ capacitacion.fecha.strftime('%d/%m/%Y') if capacitacion.fecha else '' }}</td>
+                  <td>{{ capacitacion.responsable }}</td>
+                  <td>
+                    {% if capacitacion.estado == 'Programada' %}
+                      <span class="badge bg-secondary">Programada</span>
+                    {% elif capacitacion.estado == 'En curso' %}
+                      <span class="badge bg-info text-dark">En curso</span>
+                    {% else %}
+                      <span class="badge bg-success">Terminada</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <!-- Botón Ver -->
+                      <button 
+                        type="button" 
+                        class="btn btn-info btn-sm" 
+                        title="Ver detalles"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#modalVerCapacitacion{{ capacitacion.id }}">
+                        <i class="bi bi-eye"></i>
+                      </button>
+
+                      <!-- Botón Editar -->
+                      {% if rol in ['Super Administrador'] %}
+                        <button 
+                          type="button" 
+                          class="btn btn-warning btn-sm" 
+                          title="Editar"
+                          data-bs-toggle="modal" 
+                          data-bs-target="#modalEditarCapacitacion{{ capacitacion.id }}">
+                          <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" 
+                                onclick="eliminarCapacitacion({{ capacitacion.id }})" 
+                                title="Eliminar">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+        <!-- Modal Ver -->
+        <div class="modal fade" id="modalVerCapacitacion{{ capacitacion.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content shadow-lg border-0">
+              
+              <!-- 🔹 Encabezado -->
+              <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                <h5 class="modal-title fw-bold">Detalles de la Capacitación #{{ capacitacion.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+
+              <!-- 🔹 Cuerpo -->
+              <div class="modal-body">
+                <!-- Información general -->
+                <div class="mb-4">
+                  <p><strong>Empresa:</strong> {{ capacitacion.nombre_empresa }}</p>
+                  <p><strong>Tema:</strong> {{ capacitacion.tema }}</p>
+                  <p><strong>Fecha:</strong> {{ capacitacion.fecha.strftime('%d/%m/%Y') if capacitacion.fecha else '' }}</p>
+                  <p><strong>Hora:</strong> {{ capacitacion.hora_formateada if capacitacion.hora_formateada else (capacitacion.hora.strftime('%H:%M') if capacitacion.hora else '') }}</p>
+                  <p><strong>Responsable:</strong> {{ capacitacion.responsable }}</p>
+                  <p><strong>Estado:</strong> {{ capacitacion.estado }}</p>
+                </div>
+
+                <hr>
+
+                <!-- Personal Citado -->
+                <h6 class="fw-bold text-primary mb-2">Personal Citado</h6>
+
+                {# lista de personal de la empresa para esta capacitación #}
+                {% set personal_list = capacitacion.personal %}
+                {# lista de ids asignados (strings) #}
+                {% set asignados = capacitacion.personal_asignado %}
+
+                {% if personal_list %}
+                  <ul class="list-group mb-4">
+                    {% for p in personal_list %}
+                      <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ p.nombre_completo }}
+                        {% if asignados and (p.id|string) in asignados %}
+                          <span class="badge bg-success">Citado</span>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="alert alert-secondary py-2">No hay personal activo para la empresa de esta capacitación.</div>
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+        </div>
+  
+      <!-- Modal Editar -->
+      <div class="modal fade" id="modalEditarCapacitacion{{ capacitacion.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+              <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle"></i>Editar Capacitación #{{ capacitacion.id }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form method="POST" action="{{ url_for('capacitaciones.editar_capacitacion', capacitacion_id=capacitacion.id) }}">
+                <div class="row g-3">
+
+                  <!-- Tema -->
+                  <div class="col-md-6">
+                    <label class="form-label">Tema</label>
+                    <input type="text" name="tema" value="{{ capacitacion.tema }}" class="form-control" required
+                          {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                    {% if rol not in ['Super Administrador'] %}
+                    <input type="hidden" name="tema" value="{{ capacitacion.tema }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- Empresa -->
+                    <div class="col-md-6">
+                    <label class="form-label">Empresa</label>
+                    <select name="nit_empresa" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                      {% for empresa in empresas %}
+                        <option value="{{ empresa.nit_empresa }}" {% if capacitacion.nit_empresa == empresa.nit_empresa %}selected{% endif %}>
+                          {{ empresa.nombre }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    {% if rol not in ['Super Administrador'] %}
+                    <input type="hidden" name="nit_empresa" value="{{ capacitacion.nit_empresa }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- Fecha -->
+                  <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <input 
+                      type="date" 
+                      name="fecha" 
+                      value="{{ capacitacion.fecha.strftime('%Y-%m-%d') if capacitacion.fecha else '' }}" 
+                      class="form-control" 
+                      required
+                      id="fecha{{ capacitacion.id }}"                          {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                    {% if rol not in ['Super Administrador'] %}
+                    <input type="hidden" name="fecha" value="{{ capacitacion.fecha.strftime('%Y-%m-%d') if capacitacion.fecha else '' }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- Hora -->
+                  <div class="col-md-4">
+                    <label class="form-label">Hora</label>
+                    <input type="time" 
+                           id="horaInput{{ capacitacion.id }}"
+                           name="hora" 
+                           value="{{ capacitacion.hora_formateada if capacitacion.hora_formateada else capacitacion.hora }}" 
+                           class="form-control" 
+                           data-original-value="{{ capacitacion.hora_formateada if capacitacion.hora_formateada else capacitacion.hora }}"
+                           onchange="handleHoraChange(this, {{ capacitacion.id }})"
+                           required
+                           {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                    <input type="hidden" id="horaChanged{{ capacitacion.id }}" name="hora_changed" value="false">
+                    {% if rol not in ['Super Administrador'] %}
+                    <input type="hidden" name="hora" value="{{ capacitacion.hora_formateada if capacitacion.hora_formateada else capacitacion.hora }}">
+                    {% endif %}
+                  </div>
+                  
+                  <script>
+                  function handleHoraChange(input, capacitacionId) {
+                      const originalValue = input.dataset.originalValue;
+                      const changedInput = document.getElementById('horaChanged' + capacitacionId);
+                      if (input.value !== originalValue) {
+                          changedInput.value = 'true';
+                          console.log('Hora cambiada:', input.value);
+                      } else {
+                          changedInput.value = 'false';
+                          console.log('Hora sin cambios');
+                      }
+                  }
+                  </script>
+
+                  <!-- Estado -->
+                  <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select" required
+                            {% if rol not in ['Super Administrador'] %}disabled{% endif %}>
+                      <option value="Programada" {% if capacitacion.estado == 'Programada' %}selected{% endif %}>Programada</option>
+                      <option value="En curso" {% if capacitacion.estado == 'En curso' %}selected{% endif %}>En curso</option>
+                      <option value="Terminada" {% if capacitacion.estado == 'Terminada' %}selected{% endif %}>Terminada</option>
+                    </select>
+                    {% if rol not in ['Super Administrador'] %}
+                    <input type="hidden" name="estado" value="{{ capacitacion.estado }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- Responsable -->
+                  <div class="col-12">
+                    <label class="form-label">Responsable</label>
+                    <select name="responsable_id" class="form-select" required {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                      {% for u in usuarios %}
+                        <option value="{{ u.id }}" {% if capacitacion.responsable_id is defined and capacitacion.responsable_id == u.id %}selected{% endif %}>{{ u.nombre_completo }}</option>
+                      {% endfor %}
+                    </select>
+                    {% if rol not in ['Super Administrador'] %}
+                      <input type="hidden" name="responsable_id" value="{{ capacitacion.responsable_id if capacitacion.responsable_id is defined else '' }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- Personal asignado -->
+                  <div class="col-12">
+                    <label class="form-label">Personal asignado</label>
+                    <select name="personal[]" class="form-select" multiple required
+                            {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                      {% for p in capacitacion.personal %}
+                        <option value="{{ p.id }}"
+                          {% if capacitacion.personal_asignado is defined and p.id|string in capacitacion.personal_asignado %}selected{% endif %}>
+                          {{ p.nombre_completo }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <small class="text-muted">Puede seleccionar varios empleados con Ctrl o Shift</small>
+
+                    {% if rol not in ['Super Administrador'] %}
+                      {% for pid in personal_asignado %}
+                        <input type="hidden" name="personal[]" value="{{ pid }}">
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+
+
+                <!-- Botones -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                  <button type="submit" class="btn btn-success"
+                          {% if rol not in ['Super Administrador', 'Administrador'] %}disabled{% endif %}>
+                    <i class="fas fa-save"></i> Guardar Cambios
+                  </button>
+                  <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">
+            No hay capacitaciones registradas
+          </td>
+        </tr>
+        {% endif %}
+    </tbody>
+  </table>
+</div>    
+
+<!-- Modal NUEVA CAPACITACIÓN -->
+<div class="modal fade" id="modalCapacitacion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title">Nueva Capacitación</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form method="POST" action="{{ url_for('capacitaciones.crear_capacitacion') }}">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label>Tema</label>
+              <input type="text" name="tema" class="form-control" required>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Empresa</label>
+              <select name="empresa" id="empresa" class="form-select" required>
+                <option value="">Seleccione...</option>
+                {% for empresa in empresas %}
+                  <option value="{{ empresa.nit_empresa }}">{{ empresa.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Responsable</label>
+              <select name="responsable_id" id="responsable" class="form-select" required>
+                <option value="">Seleccione una empresa primero...</option>
+              </select>
+            </div>
+
+            <div class="col-md-8 mb-3">
+              <label>Personal asignado</label>
+              <select name="personal_asignado" id="personal" class="form-select" multiple required>
+                <option value="">Seleccione una empresa primero...</option>
+              </select>
+              <small class="text-muted">Puede seleccionar varios empleados con Ctrl o Shift</small>
+            </div>
+
+
+
+            <div class="col-md-4 mb-3">
+              <label>Fecha</label>
+              <input type="date" name="fecha" class="form-control" required>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Hora</label>
+              <input type="time" name="hora" class="form-control" required>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Estado</label>
+              <select name="estado" class="form-select">
+                <option value="Programada">Programada</option>
+                <option value="En curso">En curso</option>
+                <option value="Terminada">Terminada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+<!-- Botones de acción -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Guardar Capacitación
+          </button>
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+              <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- 🔹 Paginación -->
+<nav aria-label="Paginación de capacitaciones" class="mt-3">
+    <ul class="pagination justify-content-center">
+
+        {% if pagina_actual > 1 %}
+        <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('capacitaciones.capacitaciones', 
+                                pagina=pagina_actual-1, 
+                                nombre=filtro_nombre, 
+                                responsable=filtro_responsable, 
+                                nit_empresa=filtro_empresa) }}">&lt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&lt;</span></li>
+        {% endif %}
+
+        {% for p in range(1, total_paginas + 1) %}
+        <li class="page-item {% if p == pagina_actual %}active{% endif %}">
+            <a class="page-link"
+               href="{{ url_for('capacitaciones.capacitaciones', 
+                                pagina=p, 
+                                nombre=filtro_nombre, 
+                                responsable=filtro_responsable, 
+                                nit_empresa=filtro_empresa) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+
+        {% if pagina_actual < total_paginas %}
+        <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('capacitaciones.capacitaciones', 
+                                pagina=pagina_actual+1, 
+                                nombre=filtro_nombre, 
+                                responsable=filtro_responsable, 
+                                nit_empresa=filtro_empresa) }}">&gt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&gt;</span></li>
+        {% endif %}
+
+    </ul>
+</nav>
+
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const empresaSelect = document.getElementById("empresa");
+  const responsableSelect = document.getElementById("responsable");
+  const personalSelect = document.getElementById("personal");
+
+  empresaSelect.addEventListener("change", function () {
+    const nit = this.value;
+
+    // Limpiar selects previos
+    responsableSelect.innerHTML = '<option value="">Cargando...</option>';
+    personalSelect.innerHTML = '<option value="">Cargando...</option>';
+
+    if (!nit) {
+      responsableSelect.innerHTML = '<option value="">Seleccione una empresa primero...</option>';
+      personalSelect.innerHTML = '<option value="">Seleccione una empresa primero...</option>';
+      return;
+    }
+
+    // Cargar responsables
+    fetch(`/capacitaciones/api/personal/${nit}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.length > 0) {
+          let opciones = "";
+          data.forEach(p => {
+            opciones += `<option value="${p.id}">${p.nombre_completo}</option>`;
+          });
+          responsableSelect.innerHTML = opciones;
+          personalSelect.innerHTML = opciones;
+        } else {
+          responsableSelect.innerHTML = '<option value="">No hay personal registrado</option>';
+          personalSelect.innerHTML = '<option value="">No hay personal registrado</option>';
+        }
+      })
+      .catch(err => {
+        console.error("Error cargando personal:", err);
+        responsableSelect.innerHTML = '<option value="">Error al cargar</option>';
+        personalSelect.innerHTML = '<option value="">Error al cargar</option>';
+      });
+  });
+});
+</script>
+
+<script>
+// Función para eliminar capacitación
+function eliminarCapacitacion(id) {
+    Swal.fire({
+        title: '¿Eliminar capacitación?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+    }).then(result => {
+        if (result.isConfirmed) {
+            fetch(`/capacitaciones/eliminar_capacitacion/${id}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Eliminado', data.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            });
+        }
+    });
+}
+
+// Agregar listeners cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-target^="#modalEditarCapacitacion"]').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const modalId = this.getAttribute('data-bs-target');
+      const capacitacionId = modalId.replace('#modalEditarCapacitacion', '');
+
+      console.log('🟡 Intentando cargar capacitación:', capacitacionId);
+
+      try {
+        const res = await fetch(`/editar_capacitacion/${capacitacionId}`, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        console.log('📩 Estado respuesta:', res.status);
+        const data = await res.json();
+        console.log('📦 Datos recibidos:', data);
+
+        if (data.error) {
+          console.error('❌ Error del servidor:', data.error);
+          return;
+        }
+
+        const personalAsignado = data.personal_asignado || [];
+        console.log('👥 Personal asignado (lista):', personalAsignado);
+
+        const select = document.querySelector(`${modalId} select[name="personal[]"]`);
+        console.log('🔍 Select encontrado:', select);
+
+        if (select) {
+          [...select.options].forEach(opt => {
+            opt.selected = personalAsignado.includes(opt.value);
+          });
+        } else {
+          console.warn('⚠️ No se encontró el select dentro del modal', modalId);
+        }
+
+      } catch (err) {
+        console.error('💥 Error al cargar datos de la capacitación:', err);
+      }
+    });
+  });
+});
+
+    // Confirmación para nueva capacitación
+    const formCrear = document.querySelector('form[action*="crear_capacitacion"]');
+    if (formCrear) {
+        formCrear.addEventListener('submit', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: '¿Crear capacitación?',
+                text: "¿Desea crear esta nueva capacitación?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, crear',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#dc3545'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.submit();
+                }
+            });
+        });
+    }
+});
+</script>
+<!-- Script para el menú hamburguesa -->
+<script>
+  const toggleBtn = document.getElementById('toggleBtn');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+
+  toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      mainContent.classList.toggle('collapsed');
+  });
+</script>
+<script>
+document.getElementById("empresa").addEventListener("change", function() {
+    const nitEmpresa = this.value;
+    const selectResponsable = document.getElementById("responsable");
+
+    // Limpiar opciones anteriores
+    selectResponsable.innerHTML = '<option value="">Cargando...</option>';
+
+    if (nitEmpresa) {
+        fetch(`/capacitaciones/obtener_responsables/${nitEmpresa}`)
+            .then(response => response.json())
+            .then(data => {
+                selectResponsable.innerHTML = '<option value="">Seleccione...</option>';
+                if (data.length === 0) {
+                    selectResponsable.innerHTML = '<option value="">No hay responsables disponibles</option>';
+                } else {
+                    data.forEach(r => {
+                        const option = document.createElement('option');
+                        option.value = r.id;
+                        option.textContent = r.nombre_completo;
+                        selectResponsable.appendChild(option);
+                    });
+                }
+            })
+            .catch(() => {
+                selectResponsable.innerHTML = '<option value="">Error al cargar</option>';
+            });
+    } else {
+        selectResponsable.innerHTML = '<option value="">Seleccione una empresa primero...</option>';
+    }
+});
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    // Selecciona todos los campos de fecha (uno por cada modal)
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+      input.setAttribute('min', hoy);
+    });
+  });
+</script>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for category, message in messages %}
+                    Swal.fire({
+                        icon: '{{ 'success' if category == 'success' else 'error' if category in ['danger', 'error'] else 'warning' if category == 'warning' else 'info' }}',
+                        title: '{{ 'Éxito' if category == 'success' else 'Error' if category in ['danger', 'error'] else 'Atención' if category == 'warning' else 'Información' }}',
+                        text: '{{ message|escape|replace('\n','\\n') }}',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '{{ '#28a745' if category == 'success' else '#dc3545' if category in ['danger', 'error'] else '#ffc107' if category == 'warning' else '#17a2b8' }}'
+                    }).then(() => {
+                        if ('{{ category }}' === 'success') {
+                            location.reload();
+                        }
+                    });
+                {% endfor %}
+            });
+        </script>
+    {% endif %}
+{% endwith %}
+
+</body>
+</html>

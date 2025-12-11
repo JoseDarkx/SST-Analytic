@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a SST-AnalyTIC</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+
+    <h1>Bienvenido a SST-AnalyTIC</h1>
+    <p>Somos una solución integral para la gestión de Seguridad y Salud en el Trabajo.</p>
+    <!-- Logo del sistema -->
+        <img src="{{ url_for('static', filename='img/Logo-sst.png') }}" alt="Logo" class="logo">
+
+    {% if 'usuario' not in session %}
+        <!-- Si el usuario NO ha iniciado sesión, mostramos botones de acción -->
+        <a href="{{ url_for('auth.iniciar_sesion') }}">Iniciar sesión</a>
+        <a href="{{ url_for('auth.registrarse') }}">Registrarse</a>
+    {% else %}
+        <!-- Si el usuario ha iniciado sesión, mostramos su nombre y botón de salir -->
+        <div class="saludo">
+            <h2>¡Hola, {{ session['usuario'] }}!</h2>
+            <p>Accede al <a href="{{ url_for('auth.dashboard') }}">panel principal</a> o cierra tu sesión si has terminado.</p>
+            <a href="{{ url_for('auth.iniciar_sesion') }}">Cerrar sesión</a>
+        </div>
+    {% endif %}
+
+</body>
+</html>

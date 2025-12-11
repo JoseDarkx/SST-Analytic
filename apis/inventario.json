@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "nombre": "casco protector",
+        "tipo_proteccion": "cabeza",
+        "normativa_cumplida": "12343",
+        "proveedor": "empresas seguridad",
+        "vida_util_dias": 120,
+        "fecha_vencimiento": "2025-09-25",
+        "stock": 46
+    },
+    {
+        "id": 4,
+        "nombre": "guantes",
+        "tipo_proteccion": "manos",
+        "normativa_cumplida": "24234",
+        "proveedor": "empresas seguridad",
+        "vida_util_dias": 500,
+        "fecha_vencimiento": "2025-09-25",
+        "stock": 120
+    }
+]

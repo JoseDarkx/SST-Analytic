@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Efectividad | SST-AnalyTIC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/capacitaciones.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+    <li><a href="{{ url_for('evaluaciones_medicas.evaluaciones_medicas') }}" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol == ['Super Administrador', 'Administrador'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      {% if rol in ['Super Administrador', 'Administrador de Empresa', 'Administrador'] %}
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+  </ul>
+</div>
+<div class="container my-4">
+
+<div class="container my-4">
+
+    <!-- Reporte de efectividad -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4>Reporte de Efectividad</h4>
+            <p class="text-muted">Genera reportes de impacto de las capacitaciones según resultados.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/reporte_capacitaciones_pdf" class="btn btn-danger">
+                <i class="fas fa-file-pdf"></i> Generar PDF
+            </a>
+            <a href="/reporte_capacitaciones_excel" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Gráfico de efectividad simple -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Resumen de Evaluaciones</h6>
+                </div>
+                <div class="card-body">
+                    {% set total_evaluaciones = evaluaciones|length %}
+                    {% set aprobados = evaluaciones|selectattr('resultado', 'equalto', 'Aprobado')|list|length %}
+                    {% set no_aprobados = evaluaciones|selectattr('resultado', 'equalto', 'No aprobado')|list|length %}
+                    {% set requieren = evaluaciones|selectattr('resultado', 'equalto', 'Requiere')|list|length %}
+
+                    <div class="row text-center">
+                        <div class="col">
+                            <h5 class="text-success">{{ aprobados }}</h5>
+                            <small>Aprobados</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="text-warning">{{ requieren }}</h5>
+                            <small>Requieren</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="text-danger">{{ no_aprobados }}</h5>
+                            <small>No aprobados</small>
+                        </div>
+                    </div>
+
+                    {% if total_evaluaciones > 0 %}
+                    <div class="mt-3">
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ (aprobados / total_evaluaciones * 100)|round(1) }}%"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ (requieren / total_evaluaciones * 100)|round(1) }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ (no_aprobados / total_evaluaciones * 100)|round(1) }}%"></div>
+                        </div>
+                        <small class="text-muted">Efectividad: {{ (aprobados / total_evaluaciones * 100)|round(1) }}%</small>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</script>
+<!-- Script para el menú hamburguesa -->
+<script>
+  const toggleBtn = document.getElementById('toggleBtn');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+
+  toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      mainContent.classList.toggle('collapsed');
+  });
+</script>
+</body>
+</html>

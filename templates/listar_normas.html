@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Normas Legales | SST-AnalyTIC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap y estilos -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/normativas.css') }}">
+</head>
+
+<body>
+<!-- =====================================================
+🔹 SIDEBAR (menú lateral)
+===================================================== -->
+<div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+    <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+        <!-- Sección Inicio -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    </ul>
+</div>
+
+    <div class="content flex-grow-1" id="mainContent">
+
+    <!-- Barra superior -->
+    <header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+        <div><strong><i class="bi bi-building"></i> listado de Normativas</strong></div>
+    <div class="text-end">
+    <div class="user-info">
+        <div>{{ usuario_actual.nombre_completo }}</div>
+        <div class="text-muted small">{{ usuario_actual.rol }}</div>
+    </div>
+    <!-- Botón logout -->
+    <a href="{{ url_for('auth.cerrar_sesion') }}">
+        <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+    </a>
+    </div>
+    </header>
+
+<!-- =====================================================
+🔹 CONTENIDO PRINCIPAL
+===================================================== -->
+<div id="mainContent">
+    <div class="container mt-2 pt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-dark"><i class="bi bi-file-earmark-text"></i> Listado de Normativas</h4>
+            {% if rol in ['Super Administrador'] %}
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+                <i class="bi bi-plus-circle"></i> Nueva Normativa
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+<!-- Filtros Frontend -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label><strong>Buscar por nombre</strong></label>
+                <input id="filtroNombre" type="text" class="form-control" placeholder="Ej: Ley 1562">
+            </div>
+
+            <div class="col-md-6">
+                <label><strong>Filtrar por tipo</strong></label>
+                <select id="filtroTipo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Ley">Ley</option>
+                    <option value="Decreto">Decreto</option>
+                    <option value="Resolución">Resolución</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {% if normativas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Enlace</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for n in normativas %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ n.nombre }}</td>
+                                <td>{{ n.tipo }}</td>
+                                <td>{{ n.descripcion[:60] }}...</td>
+                                <td>
+                                    <a href="{{ n.url_oficial }}" target="_blank" class="text-info">
+                                        <i class="bi bi-link-45deg fs-5"></i>
+                                    </a>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-info btn-sm" onclick="verNormativa({{ n.id }})"><i class="bi bi-eye"></i></button>
+                                        {% if rol in ['Super Administrador'] %}
+                                        <button class="btn btn-warning btn-sm " onclick="editarNormativa({{ n.id }})"><i class="bi bi-pencil-square"></i></button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No hay normativas registradas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+🔹 MODALES (AGREGAR / VER / EDITAR)
+===================================================== -->
+
+<!-- Modal Agregar -->
+<div class="modal fade" id="modalAgregar" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nueva Normativa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <form method="POST" action="/normativas/agregar">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" name="tipo" required>
+                        <option value="Ley">Ley</option>
+                        <option value="Decreto">Decreto</option>
+                        <option value="Resolución">Resolución</option>  <!-- Con tilde -->
+                    </select>
+
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Enlace</label>
+                    <input type="url" name="url_oficial" class="form-control" placeholder="https://ejemplo.com" required>
+                </div>
+            </div>
+            <div class="text-end mt-3">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Guardar 
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+
+<!-- Modal Ver -->
+<div class="modal fade" id="modalVer" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-eye"></i> Detalle de Normativa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body" id="detalleNormativa"></div>
+</div>
+</div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Normativa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body" id="contenidoEditar"></div>
+
+    <div class="text-end mt-3">
+        <button type="submit" form="formEditarNormativa" class="btn btn-success">
+            <i class="fas fa-save"></i> Guardar Cambios
+        </button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i> Cancelar
+        </button>
+    </div>
+</div>
+</div>
+</div>
+
+<!-- =====================================================
+🔹 SCRIPTS
+===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* === Sidebar === */
+document.getElementById("toggleBtn").addEventListener("click", () => {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+    document.getElementById("mainContent").classList.toggle("collapsed");
+    document.querySelector(".topbar").classList.toggle("collapsed");
+});
+
+/* === Ver Normativa === */
+function verNormativa(id) {
+    fetch(`/normativas/api/normativas/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            const html = `
+                <p><strong>Nombre:</strong> ${data.nombre}</p>
+                <p><strong>Tipo:</strong> ${data.tipo}</p>
+                <p><strong>Descripción:</strong> ${data.descripcion}</p>
+                <p><strong>Enlace:</strong> <a href="${data.enlace}" target="_blank">${data.enlace}</a></p>`;
+            document.getElementById("detalleNormativa").innerHTML = html;
+            new bootstrap.Modal(document.getElementById("modalVer")).show();
+        });
+}
+
+/* === Editar Normativa === */
+function editarNormativa(id) {
+    fetch(`/normativas/api/normativas/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            const html = `
+            <form id="formEditarNormativa" method="POST" action="/normativas/editar/${data.id}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" value="${data.nombre}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-control" required>
+                            <option value="Ley" ${data.tipo === "Ley" ? "selected" : ""}>Ley</option>
+                            <option value="Decreto" ${data.tipo === "Decreto" ? "selected" : ""}>Decreto</option>
+                            <option value="Resolución" ${data.tipo === "Resolución" ? "selected" : ""}>Resolución</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3" required>${data.descripcion}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Enlace</label>
+                        <input type="url" name="url_oficial" class="form-control" value="${data.url_oficial || ''}" required>
+                    </div>
+
+                </div>
+            </form>`;
+            document.getElementById("contenidoEditar").innerHTML = html;
+            new bootstrap.Modal(document.getElementById("modalEditar")).show();
+        });
+}
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const inputNombre = document.getElementById("filtroNombre");
+    const selectTipo = document.getElementById("filtroTipo");
+
+    const filas = document.querySelectorAll("table tbody tr");
+
+    function filtrar() {
+        const textoNombre = inputNombre.value.toLowerCase();
+        const textoTipo = selectTipo.value.toLowerCase();
+
+        filas.forEach(fila => {
+            const nombre = fila.children[1].textContent.toLowerCase();
+            const tipo = fila.children[2].textContent.toLowerCase();
+
+            let coincide = true;
+
+            if (textoNombre && !nombre.includes(textoNombre)) {
+                coincide = false;
+            }
+
+            if (textoTipo && tipo !== textoTipo) {
+                coincide = false;
+            }
+
+            fila.style.display = coincide ? "" : "none";
+        });
+    }
+
+    inputNombre.addEventListener("input", filtrar);
+    selectTipo.addEventListener("change", filtrar);
+});
+</script>
+
+
+
+</body>
+</html>

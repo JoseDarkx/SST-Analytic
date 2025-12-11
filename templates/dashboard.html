@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Administrador</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons (para íconos del menú) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+  <!-- Importar Chart.js desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+</head>
+<body>
+<!-- =====================================================
+  🔹 SIDEBAR (menú lateral)
+===================================================== -->
+<div class="sidebar" id="sidebar">
+    
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+      <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+      <li><a href="/auth/notificaciones" class="menu-link"><i class="bi bi-bell"></i> <span class="text">Notificaciones</span></a></li>
+    </ul>
+</div>
+
+<!-- =====================================================
+  🔹 CONTENIDO PRINCIPAL
+===================================================== -->
+<div class="content flex-grow-1" id="mainContent">
+
+  <!-- Barra superior -->
+  <header class="bg-light d-flex justify-content-between align-items-center px-4 py-2 border-bottom">
+    <div><strong>Panel principal / Dashboard</strong></div>
+<div class="text-end">
+  <div class="user-info">
+    <div>{{ usuario_actual.nombre_completo }}</div>
+    <div class="text-muted small">{{ usuario_actual.rol }}</div>
+  </div>
+  <!-- Botón logout -->
+  <a href="{{ url_for('auth.cerrar_sesion') }}">
+    <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+  </a>
+</div>
+  </header>
+
+  <!-- Contenedor principal -->
+  <div class="container-fluid mt-4">
+
+    <!-- Filtro por empresa (solo para Super Administrador) -->
+    {% if es_super_admin %}
+    <form method="GET" class="mb-4">
+      <label for="nit_empresa"><strong>Filtrar por Empresa:</strong></label>
+      <select name="nit_empresa" id="nit_empresa" class="form-select w-25 d-inline-block" onchange="this.form.submit()">
+        <option value="">-- Todas las Empresas --</option>
+        {% for empresa in empresas %}
+          <option value="{{ empresa.nit_empresa }}" {% if empresa.nit_empresa == nit_seleccionado %}selected{% endif %}>
+            {{ empresa.nombre }} ({{ empresa.nit_empresa }})
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+    {% else %}
+    <!-- Mostrar empresa del usuario -->
+    <div class="mb-4">
+      <strong>Empresa:</strong> {{ empresa_usuario }}
+    </div>
+    {% endif %}
+
+    <!-- Tarjetas resumen -->
+    <div class="row mb-4">
+      {% if es_super_admin %}
+      <div class="col-md-4">
+        <div class="card bg-primary text-white">
+          <div class="card-body">
+            <h5>Total Empresas</h5>
+            <p class="fs-3">{{ total_empresas }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <div class="col-md-4">
+        <div class="card bg-success text-white">
+          <div class="card-body">
+            <h5>Evaluaciones Activas</h5>
+            <p class="fs-3">{{ total_evaluaciones }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-warning text-white">
+          <div class="card-body">
+            <h5>Capacitaciones Pendientes</h5>
+            <p class="fs-3">{{ total_capacitaciones }}</p>
+          </div>
+        </div>
+      </div>
+
+    <!-- Gráficos -->
+    <!-- Gráficos -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Incidentes por Tipo</h5>
+
+            <div style="height: 300px; position: relative;">
+              <canvas id="graficoIncidentes"></canvas>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Estado de Documentos</h5>
+
+            <div style="height: 300px; position: relative;">
+              <canvas id="graficoDocumentos"></canvas>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div> <!-- cierre container-fluid -->
+
+</div> <!-- cierre contenido -->
+
+<!-- =====================================================
+  🔹 SCRIPTS
+===================================================== -->
+
+<!-- Script para el menú hamburguesa -->
+<script>
+  const toggleBtn = document.getElementById('toggleBtn');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+
+  toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      mainContent.classList.toggle('collapsed');
+  });
+</script>
+
+<!-- Script para gráficos -->
+<script>
+  // ================================
+  //   GRAFICO INCIDENTES
+  // ================================
+const ctxIncidentes = document.getElementById('graficoIncidentes');
+
+const labelsIncidentes = {{ incidentes_labels | tojson | safe }};
+const dataIncidentes = {{ incidentes_data | tojson | safe }};
+
+const rutasIncidentes = {
+    "Accidente": "/incidentes_accidentes",
+    "Casi Accidente": "/incidentes_accidentes",
+    "Incidente": "/incidentes_accidentes",
+    "Enfermedad Laboral": "/incidentes_accidentes"
+};
+
+// Crear gráfico
+const chartIncidentes = new Chart(ctxIncidentes, {
+    type: 'bar',
+    data: {
+        labels: labelsIncidentes,
+        datasets: [{
+            label: 'Cantidad',
+            data: dataIncidentes
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        onClick: (event) => {
+            const points = chartIncidentes.getElementsAtEventForMode(
+                event,
+                'nearest',
+                { intersect: true },
+                true
+            );
+
+            if (!points.length) return;
+
+            const index = points[0].index;
+            const label = labelsIncidentes[index];
+
+            if (rutasIncidentes[label]) {
+                window.location.href = rutasIncidentes[label];
+            }
+        }
+    }
+});
+</script>
+
+<script>
+
+   // ================================
+  //   GRAFICO documentos 
+  // ================================
+const ctxDocumentos = document.getElementById('graficoDocumentos');
+
+const labelsDocumentos = {{ documentos_labels | tojson | safe }};
+const dataDocumentos = {{ documentos_data | tojson | safe }};
+
+const rutasDocumentos = {
+    "Diligenciado": "/documentacion",
+    "En Proceso": "/documentacion",
+    "Sin Diligenciar": "/documentacion",
+    "Rechazado": "/documentacion"
+};
+
+// 🎨 Colores profesionales y diferentes
+const colores = [
+    "#4e73df",
+    "#1cc88a",
+    "#36b9cc",
+    "#f6c23e",
+    "#e74a3b"
+];
+
+const chartDocumentos = new Chart(ctxDocumentos, {
+    type: 'bar',
+    data: {
+        labels: labelsDocumentos,
+        datasets: [{
+            label: 'Cantidad de Documentos',
+            data: dataDocumentos,
+            backgroundColor: colores.slice(0, dataDocumentos.length),
+            borderColor: "#ffffff",
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+            legend: { display: false }
+        },
+
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+            }
+        },
+
+        onClick: (event) => {
+            const points = chartDocumentos.getElementsAtEventForMode(
+                event,
+                'nearest',
+                { intersect: true },
+                true
+            );
+
+            if (!points.length) return;
+
+            const index = points[0].index;
+            const label = labelsDocumentos[index];
+
+            if (rutasDocumentos[label]) {
+                window.location.href = rutasDocumentos[label];
+            }
+        }
+    }
+});
+</script>
+
+
+</script>
+
+</body>
+</html>

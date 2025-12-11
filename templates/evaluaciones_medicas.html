@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SST-AnalyTIC - Evaluaciones Médicas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/evaluaciones_medicas.css') }}">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <div class="sidebar" id="sidebar">
+    <!-- Botón hamburguesa -->
+    <button class="toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Logo / título del sistema -->
+    <h2>SST-AnalyTIC</h2>
+
+    <!-- Menú principal -->
+    <ul>
+      <!-- INICIO -->
+      <li><a href="/dashboard" class="menu-link"><i class="bi bi-house"></i> <span class="text">Inicio</span></a></li>
+
+      <!-- GESTIÓN PRINCIPAL -->
+      <li class="section-title">GESTIÓN PRINCIPAL</li>
+      <li><a href="/capacitaciones" class="menu-link"><i class="bi bi-book"></i> <span class="text">Capacitaciones</span></a></li>
+      {% if rol in ['Super Administrador', 'Administrador','Auditor'] %}
+      <li><a href="/evaluaciones_medicas" class="menu-link"><i class="bi bi-heart-pulse"></i> <span class="text">Evaluaciones Médicas</span></a></li>
+      {% endif %}
+      <li><a href="/control_epp" class="menu-link"><i class="bi bi-shield-check"></i> <span class="text">Gestión EPP</span></a></li>
+      <li><a href="/normativas" class="menu-link"><i class="bi bi-file-earmark-text"></i> <span class="text">Normas Legales</span></a></li>
+
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/solicitudes_contrasena" class="menu-link"><i class="bi bi-key"></i> <span class="text">Solicitudes Contraseña</span></a></li>
+      {% endif %}
+
+      <!-- ADMINISTRACIÓN -->
+      {% if rol in ['Super Administrador', 'Administrador','Auditor','Copasst','Vigía'] %}
+      <li class="section-title">ADMINISTRACIÓN</li>
+      {% if rol in ['Super Administrador'] %}
+      <li><a href="/empresas" class="menu-link"><i class="bi bi-building"></i> <span class="text">Empresas</span></a></li>
+      <li><a href="/usuarios" class="menu-link"><i class="bi bi-people"></i> <span class="text">Usuarios</span></a></li>
+      {% endif %}
+
+      <li><a href="/formatos_globales" class="menu-link"><i class="bi bi-archive"></i> <span class="text">Formatos Globales</span></a></li>
+      <li><a href="/documentacion" class="menu-link"><i class="bi bi-journal-text"></i> <span class="text">Documentación</span></a></li>
+      {% endif %}
+
+      <!-- GESTIÓN DE PERSONAL -->
+      <li class="section-title">GESTIÓN DE PERSONAL</li>
+      <li><a href="/planes_accion" class="menu-link"><i class="bi bi-clipboard-check"></i> <span class="text">Planes de Acción</span></a></li>
+      <li><a href="/incidentes_accidentes" class="menu-link"><i class="bi bi-exclamation-triangle"></i> <span class="text">Incidentes y Accidentes</span></a></li>
+    </ul>
+</div>
+
+<!-- CONTENIDO PRINCIPAL -->
+<div class="content flex-grow-1" id="mainContent">
+    <!-- Barra superior -->
+    <header class="bg-light d-flex justify-content-between align-items-center px-3 py-3 border-bottom">
+        <div><i class="bi bi-heart-pulse"></i><strong> Evaluaciones Médicas </strong></div>
+        <div class="text-end">
+            <div class="user-info">
+                <div>{{ usuario_actual.nombre }}</div>
+                <div class="text-muted small">{{ usuario_actual.rol }}</div>
+            </div>
+            <a href="{{ url_for('auth.cerrar_sesion') }}">
+                <img src="{{ url_for('static', filename='img/logout-icon.png') }}" alt="Salir" width="18">
+            </a>
+        </div>
+    </header>
+
+    <!-- Contenido -->
+    <div class="container mt-4">
+        <h2 class="mb-4 titulo-inventario"><i class="bi bi-heart-pulse"></i> Evaluaciones Médicas</h2>
+
+        <!-- Nueva Evaluación -->
+        <div class="d-flex justify-content-end mb-3 gap-2">
+        {% if rol in ['Super Administrador', 'Administrador'] %}
+            <a href="{{ url_for('evaluaciones_medicas.agregar_evaluaciones', abrir_modal='true') }}"  
+            class="btn btn-success"
+            data-bs-toggle="modal" data-bs-target="#modalAgregarEvaluacion">
+            <i class="bi bi-plus-circle"></i> Agregar Evaluación Médica
+            </a>
+        {% endif %}
+        </div>
+        
+
+        <!-- Tabla -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clipboard-heart"></i> Resultados</span>
+                    <input type="text" id="searchInput" class="form-control form-control-sm w-25" placeholder="🔍 Buscar...">
+                </h5>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Empresa</th>
+                                <th>Tipo Evaluación</th>
+                                <th>Médico Examinador</th>
+                                <th>Fecha Evaluación</th>
+                                <th>Archivo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEvaluaciones">
+                            {% if evaluaciones %}
+                            {% for ev in evaluaciones %}
+                            <tr>
+                                <td>{{ ev.nombre_completo }}</td>
+                                <td>{{ ev.empresa }}</td>
+                                <td><span class="badge bg-info">{{ ev.tipo_evaluacion }}</span></td>
+                                <td>{{ ev.medico_examinador }}</td>
+                                <td>{{ ev.fecha.strftime('%d/%m/%Y') if ev.fecha else '' }}</td>
+                                <td class="text-center">
+                                    {% if ev.archivo_url %}
+                                    <a href="{{ url_for('static', filename=ev.archivo_url) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">No disponible</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <!-- Botón VER -->
+                                    <button class="btn btn-sm btn-info" title="Ver"
+                                        data-bs-toggle="modal" data-bs-target="#modalVerEvaluacion{{ ev.id }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+
+                                    <!-- Botón EDITAR -->
+                                    {% if rol in ['Super Administrador'] %}
+                                        <button class="btn btn-sm btn-warning" title="Editar"
+                                            data-bs-toggle="modal" data-bs-target="#modalEditarEvaluacion{{ ev.id }}">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+
+                                        <!-- Botón ELIMINAR -->
+                                        <button onclick="confirmarEliminacion({{ ev.id }})" class="btn btn-sm btn-danger" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- ================= MODAL VER EVALUACIÓN ================= -->
+                            <div class="modal fade" id="modalVerEvaluacion{{ ev.id }}" tabindex="-1" aria-labelledby="verEvaluacionLabel{{ ev.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                                            <h5 class="modal-title" id="verEvaluacionLabel{{ ev.id }}">Detalle de Evaluación Médica</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p><strong>Nombre completo:</strong> {{ ev.nombre_completo }}</p>
+                                            <p><strong>Documento:</strong> {{ ev.documento_identidad }}</p>
+                                            <p><strong>Empresa:</strong> {{ ev.empresa }}</p>
+                                            <p><strong>Fecha:</strong> {{ ev.fecha.strftime('%d/%m/%Y') if ev.fecha else '' }}</p>
+                                            <p><strong>Tipo de evaluación:</strong> {{ ev.tipo_evaluacion }}</p>
+                                            <p><strong>Médico examinador:</strong> {{ ev.medico_examinador }}</p>
+                                            <p><strong>Restricciones:</strong> {{ ev.restricciones or 'Sin restricciones' }}</p>
+                                            <p><strong>Observaciones:</strong> {{ ev.observaciones or 'Ninguna' }}</p>
+                                            <p><strong>Recomendaciones:</strong> {{ ev.recomendaciones or 'Ninguna' }}</p>
+
+                                            {% if ev.archivo_url %}
+                                            <a href="{{ url_for('static', filename=ev.archivo_url) }}" target="_blank" class="btn btn-outline-success btn-sm">
+                                                <i class="bi bi-file-earmark-pdf"></i> Ver archivo
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">No se subió ningún archivo</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal"> <i class="fas fa-times"></i> Cerrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ================= MODAL EDITAR EVALUACIÓN ================= -->
+                            <div class="modal fade" id="modalEditarEvaluacion{{ ev.id }}" tabindex="-1" aria-labelledby="editarEvaluacionLabel{{ ev.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                                <div class="modal-content">
+                                <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                                    <h5 class="modal-title">Editar Evaluación Médica</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('evaluaciones_medicas.editar_evaluaciones', evaluacion_id=ev.id) }}" enctype="multipart/form-data">
+                                    <div class="modal-body">
+                                    <div class="mb-3">
+                                        <strong>Personal:</strong> {{ ev.documento_identidad }} - {{ ev.nombre_completo }} ({{ ev.empresa }})
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <!-- Fecha (no editable en modal editar) -->
+                                        <div class="col-md-4">
+                                        <label class="form-label">Fecha</label>
+                                            <!-- Mostrar la fecha (solo lectura) y enviar el valor original en hidden -->
+                                            <input type="date" class="form-control" value="{{ ev.fecha }}" readonly>
+                                            <input type="hidden" name="fecha" value="{{ ev.fecha }}">
+                                        </div>
+
+                                        <!-- Tipo Evaluación (no editable en modal editar) -->
+                                        <div class="col-md-4">
+                                        <label class="form-label">Tipo</label>
+                                            <input type="text" class="form-control" value="{{ ev.tipo_evaluacion }}" readonly>
+                                            <input type="hidden" name="tipo_evaluacion" value="{{ ev.tipo_evaluacion }}">
+                                        </div>
+
+                                        <!-- Médico Examinador (no editable en modal editar) -->
+                                        <div class="col-md-4">
+                                        <label class="form-label">Médico Examinador</label>
+                                            <input type="text" class="form-control" value="{{ ev.medico_examinador }}" readonly>
+                                            <input type="hidden" name="medico_examinador" value="{{ ev.medico_examinador }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Restricciones -->
+                                    <label class="form-label">Restricciones</label>
+                                    {% if rol in ['Super Administrador', 'Administrador'] %}
+                                        <textarea name="restricciones" class="form-control mb-2">{{ ev.restricciones }}</textarea>
+                                    {% else %}
+                                        <textarea class="form-control mb-2" readonly>{{ ev.restricciones }}</textarea>
+                                        <input type="hidden" name="restricciones" value="{{ ev.restricciones }}">
+                                    {% endif %}
+
+                                    <!-- Observaciones -->
+                                    <label class="form-label">Observaciones</label>
+                                    {% if rol in ['Super Administrador', 'Administrador'] %}
+                                        <textarea name="observaciones" class="form-control mb-2">{{ ev.observaciones }}</textarea>
+                                    {% else %}
+                                        <textarea class="form-control mb-2" readonly>{{ ev.observaciones }}</textarea>
+                                        <input type="hidden" name="observaciones" value="{{ ev.observaciones }}">
+                                    {% endif %}
+
+                                    <!-- Recomendaciones -->
+                                    <label class="form-label">Recomendaciones</label>
+                                    {% if rol in ['Super Administrador', 'Administrador'] %}
+                                        <textarea name="recomendaciones" class="form-control mb-2">{{ ev.recomendaciones }}</textarea>
+                                    {% else %}
+                                        <textarea class="form-control mb-2" readonly>{{ ev.recomendaciones }}</textarea>
+                                        <input type="hidden" name="recomendaciones" value="{{ ev.recomendaciones }}">
+                                    {% endif %}
+
+                                    <!-- Archivo -->
+                                    <label class="form-label">Archivo Actual:</label><br>
+                                    {% if ev.archivo_url %}
+                                        <a href="{{ url_for('static', filename=ev.archivo_url) }}" target="_blank">Ver Archivo</a><br>
+                                    {% else %}
+                                        <span class="text-muted">No hay archivo adjunto</span>
+                                    {% endif %}
+                                    {% if rol == 'Super Administrador' %}
+                                        <input type="file" name="archivo" class="form-control mt-2">
+                                    {% endif %}
+                                    </div>
+
+                                    <div class="modal-footer">
+                                    {% if rol in ['Super Administrador', 'Administrador'] %}
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Guardar Cambios
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                    </div>
+                                </form>
+                                </div>
+                            </div>
+                            </div>
+
+                            {% endfor %}
+                            {% else %}
+                            <tr><td colspan="7" class="text-center text-muted">No se encontraron evaluaciones.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+<!-- 🔹 Paginación -->
+<nav aria-label="Paginación de evaluaciones médicas" class="mt-3">
+    <ul class="pagination justify-content-center">
+
+        {% if pagina_actual > 1 %}
+        <li class="page-item">
+            <a class="page-link"
+            href="{{ url_for('evaluaciones_medicas.evaluaciones_medicas', 
+                                pagina=pagina_actual-1, 
+                                participante=filtro_participante, 
+                                nombre=filtro_nombre, 
+                                nit_empresa=filtro_empresa) }}">&lt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&lt;</span></li>
+        {% endif %}
+
+        {% for p in range(1, total_paginas + 1) %}
+        <li class="page-item {% if p == pagina_actual %}active{% endif %}">
+            <a class="page-link"
+            href="{{ url_for('evaluaciones_medicas.evaluaciones_medicas', 
+                                pagina=p, 
+                                participante=filtro_participante, 
+                                nombre=filtro_nombre, 
+                                nit_empresa=filtro_empresa) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+
+        {% if pagina_actual < total_paginas %}
+        <li class="page-item">
+            <a class="page-link"
+            href="{{ url_for('evaluaciones_medicas.evaluaciones_medicas', 
+                                pagina=pagina_actual+1, 
+                                participante=filtro_participante, 
+                                nombre=filtro_nombre, 
+                                nit_empresa=filtro_empresa) }}">&gt;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&gt;</span></li>
+        {% endif %}
+
+    </ul>
+</nav>
+
+
+
+<!--Modal Agregar evaluaciones-->
+    <div class="modal fade" id="modalAgregarEvaluacion" tabindex="-1" aria-labelledby="modalAgregarEvaluacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Header -->
+            <div class="modal-header text-white" style="background: linear-gradient(90deg, #2a5298, #1abc9c);">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle"></i> Agregar Evaluación Médica</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('evaluaciones_medicas.agregar_evaluaciones') }}" enctype="multipart/form-data">
+                    <div class="row mb-3">
+
+                        {% if rol in ['Super Administrador'] %}
+                        <!-- Seleccionar Empresa -->
+                        <div class="col-md-6">
+                            <label class="form-label">Empresa</label>
+                            <select id="empresa" name="nit_empresa" class="form-select" required>
+                            <option value="">Seleccione una empresa</option>
+                            {% for e in empresas %}
+                                <option value="{{ e.nit_empresa }}">{{ e.nombre }} ({{ e.nit_empresa }})</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Seleccionar Personal (filtrado dinámico) -->
+                        <div class="col-md-6">
+                            <label class="form-label">Personal</label>
+                            <select id="personal" name="personal_id" class="form-select" required>
+                            <option value="">Seleccione el personal</option>
+                            </select>
+                        </div>
+
+                        {% else %}
+                        <!-- Empresa fija -->
+                        {% if rol in ['Administrador'] %}
+                        <div class="col-md-6">
+                            <label class="form-label">Empresa</label>
+                            <input type="text" class="form-control" value="{{ personal[0].empresa if personal else '' }}" readonly>
+                            <input type="hidden" name="nit_empresa" value="{{ personal[0].nit_empresa if personal else '' }}">
+                        </div>
+                        {% endif %}
+
+                        <!-- Personal de su empresa -->
+                        <div class="col-md-6">
+                            <label class="form-label">Personal</label>
+                            <select name="personal_id" class="form-select" required>
+                            <option value="">Seleccione personal</option>
+                            {% for p in personal %}
+                                <option value="{{ p.id }}">{{ p.nombre_completo }} - {{ p.documento_identidad }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- Fecha -->
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label fw-semibold">Fecha *</label>
+                        <input type="date" id="fecha" name="fecha" class="form-control border-dark border-2" value="{{ current_date }}" min="{{ current_date }}" required>
+                    </div>
+
+                    <!-- Tipo de Evaluación -->
+                    <div class="mb-3">
+                        <label for="tipo_evaluacion" class="form-label fw-semibold">Tipo de Evaluación *</label>
+                        <input type="text" id="tipo_evaluacion" name="tipo_evaluacion" class="form-control border-dark border-2" required>
+                    </div>
+
+                    <!-- Médico Examinador -->
+                    <div class="mb-3">
+                        <label for="medico_examinador" class="form-label fw-semibold">Médico Examinador *</label>
+                        <input type="text" id="medico_examinador" name="medico_examinador" class="form-control border-dark border-2" required>
+                    </div>
+
+                    <!-- Restricciones -->
+                    <div class="mb-3">
+                        <label for="restricciones" class="form-label fw-semibold">Restricciones</label>
+                        <textarea id="restricciones" name="restricciones" class="form-control border-dark border-2" rows="2"></textarea>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label fw-semibold">Observaciones</label>
+                        <textarea id="observaciones" name="observaciones" class="form-control border-dark border-2" rows="2"></textarea>
+                    </div>
+
+                    <!-- Recomendaciones -->
+                    <div class="mb-3">
+                        <label for="recomendaciones" class="form-label fw-semibold">Recomendaciones</label>
+                        <textarea id="recomendaciones" name="recomendaciones" class="form-control border-dark border-2" rows="2"></textarea>
+                    </div>
+
+                    <!-- Subida de Archivo -->
+                    <div class="mb-3">
+                        <label for="archivo" class="form-label fw-semibold">Archivo (opcional)</label>
+                        <input type="file" id="archivo" name="archivo" class="form-control border-dark border-2" accept=".pdf,.doc,.jpg,.png">
+                    </div>
+
+                    <div class="modal-footer d-flex justify-content-end gap-2 mt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Agregar Evaluacion
+                    </button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('collapsed');
+    });
+</script>
+
+<script>
+// ==========================
+// Buscador dinámico
+// ==========================
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let value = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#tablaEvaluaciones tr");
+    rows.forEach(row => row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none");
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Nota: se eliminó código que referenciaba IDs inexistentes (personal_id, nit_empresa).
+    // El comportamiento correcto para cargar personal está implementado más abajo
+    // usando la API `/evaluaciones_medicas/api/personal_por_empresa`.
+});
+
+
+// ==========================
+// Confirmar eliminación
+// ==========================
+function confirmarEliminacion(id) {
+    Swal.fire({
+        title: '¿Eliminar evaluación?',
+        text: "¿Estás seguro de eliminar la evaluación #" + id + "?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/evaluaciones_medicas/eliminar/${id}`, { method: "POST" })
+            .then(() => {
+                Swal.fire('¡Eliminado!', 'La evaluación fue eliminada correctamente.', 'success')
+                .then(() => location.reload());
+            }).catch(() => Swal.fire("Error", "No se pudo eliminar", "error"));
+        }
+    });
+}
+
+
+// Handler robusto al mostrar modales: solo intenta escribir valores si existen
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('show.bs.modal', event => {
+        try {
+            const button = event.relatedTarget; // el botón que disparó el modal
+            const modalInstance = event.target;
+            if (!button || !modalInstance) return;
+
+            // Ejemplo: si el botón trae data-participante, rellenar el input correspondiente
+            const participante = button.getAttribute ? button.getAttribute('data-participante') : null;
+            const participanteInput = modalInstance.querySelector('input[name="participante"]');
+            if (participante && participanteInput) {
+                participanteInput.value = participante;
+            }
+
+            // Puedes agregar aquí más bindings seguros si en el futuro usas otros data-attributes
+        } catch (err) {
+            // No interrumpir la apertura del modal por errores en el binding
+            console.error('Error al inicializar modal:', err);
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const empresaSelect = document.getElementById('empresa');
+  const personalSelect = document.getElementById('personal');
+
+  if (empresaSelect) {
+    empresaSelect.addEventListener('change', function() {
+      const nit = this.value;
+            if (!nit) {
+                personalSelect.innerHTML = '<option value="">Seleccione el personal</option>';
+                return;
+            }
+
+            personalSelect.innerHTML = '<option value="">Cargando...</option>';
+
+            fetch(`/evaluaciones_medicas/api/personal_por_empresa?nit_empresa=${encodeURIComponent(nit)}`)
+                .then(response => response.json())
+                .then(data => {
+                    personalSelect.innerHTML = '<option value="">Seleccione el personal</option>';
+                    const list = data.personal || [];
+                    if (list.length === 0) {
+                        personalSelect.innerHTML = '<option value="">No se encontró personal</option>';
+                        return;
+                    }
+                    list.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.nombre_completo} - ${p.documento_identidad}`;
+                        personalSelect.appendChild(option);
+                    });
+                }).catch(err => {
+                    console.error('Error cargando personal:', err);
+                    personalSelect.innerHTML = '<option value="">Error cargando personal</option>';
+                });
+    });
+  }
+});
+</script>
+
+
+<script>
+// ======================================
+// Enforce date min = today and normalize medico_examinador before submit
+// ======================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Establecer min en todos los inputs de tipo date si no lo tienen
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const isoToday = `${yyyy}-${mm}-${dd}`;
+
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        // Si el input no tiene min o el min es menor que hoy, fijarlo
+        if (!input.hasAttribute('min') || input.getAttribute('min') < isoToday) {
+            input.setAttribute('min', isoToday);
+        }
+    });
+
+    // Validación al enviar formularios: prevenir fechas anteriores y normalizar medico
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            // Validar fecha si existe
+            const fechaInput = form.querySelector('input[name="fecha"]');
+            if (fechaInput && fechaInput.value) {
+                if (fechaInput.value < isoToday) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    Swal.fire('Fecha inválida', 'La fecha no puede ser anterior a hoy.', 'error');
+                    return false;
+                }
+            }
+
+            // Normalizar medico_examinador si existe
+            const medicoInput = form.querySelector('input[name="medico_examinador"]');
+            if (medicoInput && medicoInput.value) {
+                let txt = medicoInput.value.trim();
+                // Si no empieza por Dr o DR o dr seguido de espacio o punto, prefijar 'Dr '
+                        if (!/^\s*dr\.?\s+/i.test(txt)) {
+                            medicoInput.value = 'Dr ' + txt;
+                        } else {
+                            // Reformat: quitar puntos innecesarios y estandarizar 'Dr '
+                            txt = txt.replace(/^\s*dr\.?\s*/i, '');
+                            medicoInput.value = 'Dr ' + txt;
+                        }
+            }
+
+            return true;
+        });
+    });
+});
+</script>
+
+
+{# Mostrar flash messages usando SweetAlert2 para mantener el mismo estilo que al eliminar #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                {% for category, message in messages %}
+                    (function(){
+                        const cat = '{{ category }}';
+                        const msg = `{{ message|escape|replace('\n','\\n') }}`;
+                        let icon = 'info';
+                        if (cat === 'success') icon = 'success';
+                        else if (cat === 'danger' || cat === 'error') icon = 'error';
+                        else if (cat === 'warning') icon = 'warning';
+
+                        Swal.fire({
+                            icon: icon,
+                            title: msg,
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            // opcional: recargar para limpiar estados si es necesario
+                        });
+                    })();
+                {% endfor %}
+            });
+        </script>
+    {% endif %}
+{% endwith %}
+
+</body>
+</html>

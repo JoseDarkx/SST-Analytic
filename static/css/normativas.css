@@ -1,0 +1,274 @@
+body {
+    background: linear-gradient(180deg, #dddddd 0%, #eef2f7 100%);
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =====================================================
+🔹 Sidebar (menú lateral)
+===================================================== */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(135deg, #2a5298, #1abc9c, #0dfd41);
+    color: white;
+    padding: 20px 15px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0; 
+    padding-top: 60px; /* espacio para que los íconos no queden encima del botón */
+    transition: width 0.3s ease;
+}
+
+/* Logo */
+.sidebar h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 22px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+/* Lista del menú */
+.sidebar ul {
+    list-style: none;
+    padding: 20px 0 0 0;
+    margin: 0;
+}
+
+/* Subtítulos de secciones */
+.sidebar .section-title{
+font-size: 15px;
+color: rgba(0, 0, 0, 0.9);
+opacity: 0.95;
+font-weight: 700;
+margin: 14px 0 8px;
+padding-left: 6px;
+text-transform: uppercase;
+letter-spacing: .6px;
+}
+
+/* Items de menú */
+.sidebar ul li a{
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 10px 12px;
+color: #fff;
+text-decoration: none;
+border-radius: 8px;
+transition: background .18s ease, transform .12s ease;
+font-size: 16px;
+}
+.sidebar ul li a i{ min-width: 22px; text-align: center; font-size: 18px; }
+
+/* Hover / activo */
+.sidebar ul li a:hover,
+.sidebar ul li a.active{
+background: rgba(255,255,255,0.08);
+transform: translateX(4px);
+}
+
+
+/* =====================================================
+🔹 Botón hamburguesa
+===================================================== */
+.toggle-btn {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 1001; /* siempre encima */
+    transition: color 0.3s;
+}
+
+.toggle-btn:hover {
+    color: #ddd;
+}
+
+/* =====================================================
+🔹 Sidebar colapsado
+===================================================== */
+.sidebar.collapsed{ width: var(--sidebar-collapsed); }
+.sidebar.collapsed h2,
+.sidebar.collapsed .section-title,
+.sidebar.collapsed .text { display: none; }
+.sidebar.collapsed ul li a { justify-content: center; gap: 0; padding-left: 8px; padding-right: 8px; }
+
+/* Scrollbar suave del sidebar */
+.sidebar::-webkit-scrollbar{ width: 8px; }
+.sidebar::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.06); border-radius: 8px; }
+
+
+/* =====================================================
+🔹 CONTENIDO PRINCIPAL
+===================================================== */
+.maincontent {
+    flex: 7;
+    margin-left: 200px; 
+    padding: 20px;
+    background-color: #56575a;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+.maincontent.collapsed {
+    margin-left: 80px;
+}
+
+
+/* =========================
+    🔹 HEADER / TOPBAR
+========================= */
+header {
+    background: #ffffff;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+header div strong {
+    font-size: 1.1rem;
+    color: #111827;
+}
+
+/* 🔹 Información del usuario */
+header .text-end {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+header .text-end .user-info {
+    text-align: right;
+}
+
+header .text-end .user-info div:first-child {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+header .text-end .user-info div:last-child {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* 🔹 Botón logout */
+header .text-end a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    padding: 6px 10px;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+header .text-end a:hover {
+    background: #dc2626;
+}
+
+header .text-end img {
+  filter: brightness(0) invert(1); /* Hace blanco el ícono */
+}
+
+/* =====================================================
+🔹 TABLAS PERSONALIZADAS
+===================================================== */
+.custom-table {
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+/* ✅ Encabezado negro REAL y persistente */
+.custom-table thead {
+    background-color: #000 !important;
+    color: #fff !important;
+}
+.custom-table thead th {
+    background-color: #000 !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 600;
+    padding: 14px;
+}
+
+/* Cuerpo de la tabla */
+.custom-table tbody td {
+    padding: 12px;
+    vertical-align: middle;
+    color: #333;
+}
+
+/* Hover */
+.custom-table tbody tr:hover {
+    background-color: #f2f2f2;
+}
+
+/* Bordes superiores redondeados */
+.custom-table thead tr:first-child th:first-child {
+    border-top-left-radius: 10px;
+}
+.custom-table thead tr:first-child th:last-child {
+    border-top-right-radius: 10px;
+}
+
+/* =====================================================
+🔹 BOTONES DE ACCIÓN
+===================================================== */
+.btn-sm {
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-outline-info {
+    border-color: #007bff;
+    color: #007bff;
+}
+.btn-outline-info:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.btn-warning {
+    background-color: #f0ad4e;
+    border: none;
+}
+.btn-warning:hover {
+    background-color: #ec971f;
+}
+
+/* =====================================================
+🔹 MODALES
+===================================================== */
+.modal .modal-content {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.modal-header {
+    color: white;
+}
+
+.modal-header.bg-success { background-color: #198754 !important; }
+.modal-header.bg-primary { background-color: #0d6efd !important; }
+.modal-header.bg-warning { background-color: #f0ad4e !important; }
+
+/* =====================================================
+🔹 RESPONSIVE
+===================================================== */
+@media (max-width: 768px) {
+    .sidebar { left: -100%; }
+    .sidebar.active { left: 0; }
+    #mainContent, #mainContent.collapsed { margin-left: 0; }
+    .topbar { left: 0; width: 100%; }
+}
