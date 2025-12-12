@@ -4,13 +4,21 @@ import time
 import mysql.connector
 from mysql.connector import Error
 
+def env(*names, default=None):
+    """Devuelve el primer valor existente entre múltiples nombres de variable."""
+    for name in names:
+        v = os.getenv(name)
+        if v not in (None, ""):
+            return v
+    return default
+
 def get_db_config():
     return {
-        "host": os.getenv("MYSQL_HOST", os.getenv("MYSQLHOST", "127.0.0.1")),
-        "user": os.getenv("MYSQL_USER", os.getenv("MYSQLUSER", "root")),
-        "password": os.getenv("MYSQL_PASSWORD", os.getenv("MYSQLPASSWORD", "")),
-        "database": os.getenv("MYSQL_DATABASE", os.getenv("MYSQLDATABASE", "")),
-        "port": int(os.getenv("MYSQL_PORT", os.getenv("MYSQLPORT", 3306)))
+        "host": env("MYSQL_HOST", "MYSQLHOST", "DB_HOST", default="127.0.0.1"),
+        "user": env("MYSQL_USER", "MYSQLUSER", "DB_USER", default="root"),
+        "password": env("MYSQL_PASSWORD", "MYSQLPASSWORD", "DB_PASSWORD", default=""),
+        "database": env("MYSQL_DATABASE", "MYSQLDATABASE", "DB_NAME", default=""),
+        "port": int(env("MYSQL_PORT", "MYSQLPORT", "DB_PORT", default=3306))
     }
 
 def get_connection(retries=5, delay=3):
@@ -39,3 +47,4 @@ def get_connection(retries=5, delay=3):
     raise ConnectionError(
         f"No se pudo conectar a MySQL después de {retries} intentos. Error: {last_err}"
     )
+
