@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file
-from config import get_db
+from database import get_connection as get_db
 import mysql.connector
 from io import BytesIO
 from datetime import timedelta

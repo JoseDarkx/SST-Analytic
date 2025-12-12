@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, redirect, url_for, flash, current_app, g
-from config import get_db
+from database import get_connection as get_db
 
 # --- Ajusta los nombres exactos de roles si en tu BD varían ---
 # Mapa para evitar errores por mayúsculas/minúsculas al comparar

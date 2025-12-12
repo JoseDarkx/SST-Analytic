@@ -1,5 +1,5 @@
 import os
-from config import get_db
+from database import get_connection as get_db
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, session, jsonify, send_from_directory, abort, current_app
