@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory
+from config import get_db
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -21,12 +22,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # =============================
 def get_db_connection():
     # Usa la misma base que tu sistema (igual que incidentes)
-    return mysql.connector.connect(
-        host='127.0.0.1',
-        user='root',
-        password='',
-        database='gestussg'  # 💡 cámbiala si tu sistema usa otro nombre
-    )
+    return get_db()  # 🔄 Conexión centralizada
 
 # =============================
 # LISTAR FORMATOS

@@ -1,15 +1,11 @@
 from datetime import datetime, timedelta
+from config import get_db
 import mysql.connector
 
 def generar_notificaciones():
     try:
         # Conexión a la base de datos
-        db = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        db = get_db()  # 🔄 Conexión centralizada
         cursor = db.cursor(dictionary=True)
 
         # Días de alerta para vencimientos

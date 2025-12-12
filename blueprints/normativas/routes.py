@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from config import get_db
 from utils.permisos import requiere_roles
 from datetime import datetime
 import mysql.connector
@@ -6,12 +7,7 @@ import mysql.connector
 normativas_bp = Blueprint('normativas', __name__, url_prefix='/normativas')
 
 def conectar_bd():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gestussg"
-    )
+    return get_db()  # 🔄 Conexión centralizada
 
 @normativas_bp.route('/')
 def listar_normativas():

@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, session, flash, jsonify
+from config import get_db
 from extensions import get_db
 from flask import Blueprint
 import mysql.connector
@@ -494,12 +495,7 @@ def api_epp_asignados():
 
     try:
         # Conexión a la BD
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # Consulta de EPP asignados con JOIN a personal y epp

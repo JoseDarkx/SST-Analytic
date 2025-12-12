@@ -21,12 +21,7 @@ def registrarse():
         try:
             print(">>> Entró al endpoint /registerUsu [POST]")
 
-            connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="",
-                database="gestussg"
-            )
+            connection = get_db()  # 🔄 Conexión centralizada
             cursor = connection.cursor(dictionary=True)
             print(">>> Conexión establecida con la BD")
             
@@ -91,12 +86,7 @@ def registrarse():
     try:
         print(">>> Entró al endpoint /registerUsu [GET]")
 
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -144,12 +134,7 @@ def usuarios():
     empresas = []
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # Datos del usuario actual
@@ -254,12 +239,7 @@ def cambiar_estado(id):
     try:
         print(f">>> Entró al endpoint /cambiar_estado/{id}")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cur = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -305,12 +285,7 @@ def editar_usuario(id):
     conexion = None
     cursor = None
     try:
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(f">>> Conexión establecida para editar usuario {id}")
 
@@ -388,12 +363,7 @@ def eliminar_usuario(id):
     try:
         print(f">>> Entró al endpoint /eliminar_usuario/{id}")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cur = conexion.cursor()
         print(">>> Conexión establecida con la BD")
 
@@ -429,12 +399,7 @@ def api_listar_usuarios():
         print(">>> Entró al endpoint GET /api/usuarios")
 
         # Conexión a la BD
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 

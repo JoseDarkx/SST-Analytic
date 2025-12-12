@@ -1,4 +1,5 @@
 from flask import Blueprint, current_app, render_template, request, redirect, send_from_directory, url_for, flash, jsonify,session
+from config import get_db
 from werkzeug.utils import secure_filename
 from utils.permisos import requiere_roles
 import os
@@ -10,12 +11,7 @@ planes_accion_bp = Blueprint('planes_accion', __name__, url_prefix='/planes_acci
 
 # ======================= Conexión a la Base de Datos =======================
 def conectar_bd():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gestussg"
-    )
+    return get_db()  # 🔄 Conexión centralizada
 
 # ======================= Listar Planes con Paginación =======================
 @planes_accion_bp.route('/')

@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, jsonify
+from config import get_db
 from werkzeug.utils import secure_filename
 import os
 import mysql.connector
@@ -47,12 +48,7 @@ def documentacion():
         # ----------------------------
         # 🔹 CONEXIÓN A BD
         # ----------------------------
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # ----------------------------
@@ -229,12 +225,7 @@ def guardar_documento():
             archivo.save(archivo_url)
             
 
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor()
 
         cursor.execute("""
@@ -281,12 +272,7 @@ def editar_documento(documento_id):
     conexion = None
     cursor = None
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # 🔹 Traer rol del usuario
@@ -439,12 +425,7 @@ def actualizar_documento(documento_id):
             flash('No tienes permisos para editar documentos de esta empresa', 'error')
             return redirect(url_for('documentos.documentacion'))
 
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         archivo = request.files.get('archivo')
@@ -531,12 +512,7 @@ def eliminar_documento(documento_id):
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("SELECT archivo_url, nit_empresa FROM documentos_empresa WHERE id = %s", (documento_id,))
@@ -579,12 +555,7 @@ def descargar_documento(documento_id):
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("SELECT archivo_url, nombre, nit_empresa FROM documentos_empresa WHERE id = %s", (documento_id,))
@@ -631,12 +602,7 @@ def api_documentos():
 
     try:
         # Conexión a la base de datos
-        connection = mysql.connector.connect(
-            host='localhost',
-            database='gestusSG',
-            user='root',
-            password=""
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("""

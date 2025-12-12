@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, session, flash, jsonify, send_file
+from config import get_db
 import mysql.connector
 from datetime import timedelta
 from .routes import capacitaciones_bp
@@ -18,12 +19,7 @@ def format_timedelta(td):
 def capacitaciones_por_empresa(nit_empresa):
     """Devuelve las capacitaciones de una empresa que aún no tienen evaluación"""
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("""
@@ -53,12 +49,7 @@ def capacitaciones_por_empresa(nit_empresa):
 @capacitaciones_bp.route('/capacitaciones_pendientes/<nit_empresa>')
 def capacitaciones_pendientes(nit_empresa):
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("""
@@ -95,12 +86,7 @@ def reporte_capacitaciones():
         import mysql.connector
 
         # Conexión a base de datos
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # Consulta de evaluaciones con sus resultados
@@ -148,12 +134,7 @@ def reporte_capacitaciones_pdf():
         import mysql.connector
 
         print("📡 Conectando a la base de datos...")
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         print("📋 Ejecutando query principal de capacitaciones...")
@@ -246,12 +227,7 @@ def reporte_capacitaciones_excel():
         import mysql.connector
 
         print("📡 Conectando a la base de datos...")
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
 
         query = """
             SELECT c.fecha, e.nombre as empresa, u.nombre_completo as responsable, c.estado,
@@ -316,12 +292,7 @@ def api_capacitaciones():
     
     try:
         # Conexión a la BD
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root", 
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
         
         # Consultar todas las capacitaciones
@@ -361,12 +332,7 @@ def api_capacitaciones():
 @capacitaciones_bp.route('/api/capacitaciones/<int:capacitacion_id>/evaluaciones')
 def api_evaluaciones_capacitacion(capacitacion_id):
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root", 
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
         cursor.execute("""
             SELECT capacitacion_id, participante, pre_test, post_test

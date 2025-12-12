@@ -1,4 +1,5 @@
 import os
+from config import get_db
 from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, session, jsonify, send_from_directory, abort, current_app
@@ -357,12 +358,7 @@ def api_empresas():
     print("➡️ Entrando a /api/empresas")  # Log en consola
      
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestusSG"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         cursor.execute("""

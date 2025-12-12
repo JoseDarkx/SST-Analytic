@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_file
+from config import get_db
 import mysql.connector
 from io import BytesIO
 from datetime import timedelta
@@ -24,12 +25,7 @@ def capacitaciones():
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True, buffered=True)
 
         # 🔹 Obtener información del usuario actual y su empresa
@@ -233,12 +229,7 @@ def ver_capacitacion(capacitacion_id):
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # 🔹 Obtener información general de la capacitación
@@ -329,12 +320,7 @@ def ver_capacitacion(capacitacion_id):
 @capacitaciones_bp.route('/api/personal/<nit_empresa>')
 def api_personal_empresa(nit_empresa):
     try:
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         cursor.execute("""
             SELECT id, nombre_completo
@@ -372,12 +358,7 @@ def crear_capacitacion():
 
         responsable_id = int(responsable_id)
 
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor()
 
         # Crear la capacitación
@@ -425,12 +406,7 @@ def obtener_responsables(nit_empresa):
     filtrado por el NIT de la empresa.
     """
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # Traer el personal activo de esa empresa
@@ -466,12 +442,7 @@ def editar_capacitacion(capacitacion_id):
     try:
         print(f"🔄 Editando capacitación {capacitacion_id}")
 
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
 
         # =========================
@@ -594,12 +565,7 @@ def eliminar_capacitacion(capacitacion_id):
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor()
 
         cursor.execute("SELECT id FROM capacitaciones WHERE id = %s", (capacitacion_id,))
@@ -633,12 +599,7 @@ def actualizar_estado_capacitacion(capacitacion_id):
         return jsonify({"success": False, "message": "Estado no válido"}), 400
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor()
 
         cursor.execute("""

@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from config import get_db
 from datetime import datetime, timedelta
 from werkzeug.security import  check_password_hash
 import mysql.connector
@@ -17,12 +18,7 @@ def iniciar_sesion():
         contraseña = request.form['contraseña']
         print(f"➡️ Intento de login -> NIT: {nit_empresa}, Usuario: {usuario}")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # 🔹 Traer usuario con rol y estado
@@ -139,12 +135,7 @@ def dashboard():
         return redirect(url_for('auth.iniciar_sesion'))
 
     # Conexión a la base de datos
-    conexion = mysql.connector.connect(
-        host="127.0.0.1",
-        user="root",
-        password="",
-        database="gestussg"
-    )
+    conexion = get_db()  # 🔄 Conexión centralizada
     cursor = conexion.cursor(dictionary=True)
 
     # Obtener datos del usuario logueado
@@ -257,12 +248,7 @@ def api_notificaciones():
     if rol_id not in [1, 2]:
         return {"error": "Sin permisos"}, 403
 
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="gestussg"
-    )
+    db = get_db()  # 🔄 Conexión centralizada
     cursor = db.cursor(dictionary=True)
 
     # 🔹 Consulta según rol

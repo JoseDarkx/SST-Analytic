@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, session, flash, jsonify, send_file
+from config import get_db
 import mysql.connector
 from datetime import timedelta
 from utils.permisos import requiere_roles
@@ -30,12 +31,7 @@ def evaluacion_capacitacion():
     capacitacion_id = request.args.get('capacitacion_id')
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True, buffered=True)
 
         # Usuario actual
@@ -195,12 +191,7 @@ def subir_evaluaciones():
     }
 
     try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor()
         
 
@@ -262,12 +253,7 @@ def editar_evaluacion(evaluacion_id):
     try:
         print(f">>> Entró al endpoint /editar_evaluacion/{evaluacion_id}")
 
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        connection = get_db()  # 🔄 Conexión centralizada
         cursor = connection.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 

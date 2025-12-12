@@ -10,19 +10,12 @@ def get_db():
         try:
             # Intentar usar DB_CONFIG si existe
             if hasattr(Config, 'DB_CONFIG'):
-                g.db = mysql.connector.connect(**Config.DB_CONFIG)
+                g.db = get_db()  # 🔄 Conexión centralizada
             elif hasattr(Config, 'DB_CONFIG_ENV'):
-                g.db = mysql.connector.connect(**Config.DB_CONFIG_ENV)
+                g.db = get_db()  # 🔄 Conexión centralizada
             else:
                 # Configuración por defecto si no existe
-                g.db = mysql.connector.connect(
-                    host='localhost',
-                    user='root',
-                    password='',
-                    database='sst_database',
-                    autocommit=True,
-                    charset='utf8mb4'
-                )
+                g.db = get_db()  # 🔄 Conexión centralizada
             print("✅ Conexión a BD establecida")
         except mysql.connector.Error as err:
             print(f"❌ Error de conexión a BD: {err}")
@@ -67,29 +60,27 @@ def require_db():
 
 # Función para inicializar BD si no existe
 def init_database():
-    """Crear base de datos y tablas si no existen"""
+    """Crear base de datos si no existe"""
+    import mysql.connector
+
     try:
-        # Conectar sin especificar base de datos
-        temp_config = Config.DB_CONFIG.copy() if hasattr(Config, 'DB_CONFIG') else {
-            'host': 'localhost',
-            'user': 'root', 
-            'password': '',
-            'autocommit': True
-        }
-        temp_config.pop('database', None)
-        
-        conn = mysql.connector.connect(**temp_config)
+        print("🔄 Iniciando verificación de base de datos...")
+
+        # 🔧 Conexión inicial SIN seleccionar base de datos
+        conn = get_connection()
+
         cursor = conn.cursor()
-        
-        # Crear base de datos si no existe
-        db_name = Config.DB_CONFIG.get('database', 'sst_database') if hasattr(Config, 'DB_CONFIG') else 'sst_database'
+
+        # Nombre de la BD
+        db_name = "railway"
+
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
         print(f"✅ Base de datos {db_name} verificada/creada")
-        
+
         cursor.close()
         conn.close()
         return True
-        
+
     except Exception as e:
-        print(f"⚠️  No se pudo inicializar BD: {e}")
+        print(f"⚠️ Error al crear/verificar la BD: {e}")
         return False

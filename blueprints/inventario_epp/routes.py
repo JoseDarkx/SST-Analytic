@@ -28,12 +28,7 @@ def ver_inventario():
     try:
         print(">>> Entró al endpoint /inventario/ver")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -157,12 +152,7 @@ def agregar_epp():
     try:
         print(">>> Entró al endpoint /inventario/agregar")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -228,12 +218,7 @@ def editar_epp(epp_nombre):
     try:
         print(f">>> Entró al endpoint /inventario/editar/{epp_nombre}")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -323,12 +308,7 @@ def eliminar_epp(epp_nombre):
     try:
         print(f">>> Entró al endpoint /inventario/eliminar/{epp_nombre}")
 
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 
@@ -395,12 +375,7 @@ def api_inventario_epp():
         print(">>> Entró al endpoint GET /inventario/api")
 
         # Conexión a la base de datos
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestussg"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print(">>> Conexión establecida con la BD")
 

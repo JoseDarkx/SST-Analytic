@@ -2,7 +2,7 @@
 import mysql.connector
 from werkzeug.security import generate_password_hash
 
-conexion = mysql.connector.connect(host="localhost", user="root", password="", database="gestussg")
+conexion = get_db()  # 🔄 Conexión centralizada
 cursor = conexion.cursor()
 
 usuario = input("Usuario a resetear: ").strip()

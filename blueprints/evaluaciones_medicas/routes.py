@@ -1,4 +1,5 @@
 import os
+from config import get_db
 import re
 import mysql.connector
 from flask import render_template, request, redirect, url_for, session, flash, jsonify
@@ -33,12 +34,7 @@ def evaluaciones_medicas():
     por_pagina = 10  # número de registros por página
 
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            database='gestusSG'
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # Obtener datos completos del usuario actual
@@ -210,12 +206,7 @@ def agregar_evaluaciones():
     print(f"🔑 Rol del usuario en sesión: {rol}")
 
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password="",
-            database='gestusSG'
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         print("✅ Conexión a la base de datos establecida correctamente")
 
@@ -402,12 +393,7 @@ def ver_evaluacion_medica(evaluacion_id):
     conexion = None
     cursor = None
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password="",
-            database='gestusSG'
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # Obtener evaluación médica
@@ -480,12 +466,7 @@ def editar_evaluaciones(evaluacion_id):
     conexion = None
     cursor = None
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password="",
-            database='gestusSG'
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # Obtener rol del usuario
@@ -609,12 +590,7 @@ def api_evaluaciones_medicas():
 
     try:
         # Conexión a la BD
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestusSG"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
 
         # Consulta con JOIN a personal y empresas
@@ -662,12 +638,7 @@ def api_personal_por_empresa():
         return jsonify({'personal': []}), 200
 
     try:
-        conexion = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="gestusSG"
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor(dictionary=True)
         cursor.execute("""
             SELECT p.id, p.nombre_completo, p.documento_identidad, TRIM(p.nit_empresa) AS nit_empresa, e.nombre AS empresa
@@ -698,12 +669,7 @@ def eliminar_evaluacion(evaluacion_id):
         return redirect(url_for('auth.iniciar_sesion'))
 
     try:
-        conexion = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password="",
-            database='gestusSG'
-        )
+        conexion = get_db()  # 🔄 Conexión centralizada
         cursor = conexion.cursor()
 
         # Verificar que la evaluación existe
