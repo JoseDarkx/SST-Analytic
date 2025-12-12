@@ -1,9 +1,8 @@
 from flask import Flask
 from config import Config
-from extensions import close_db
-from extensions import mail
+from extensions import close_db, mail
 
-# Importar todos los blueprints
+# Importar Blueprints
 from blueprints.auth.routes import auth_bp
 from blueprints.usuarios.routes import usuarios_bp
 from blueprints.evaluaciones_medicas.routes import evaluaciones_medicas_bp
@@ -20,14 +19,13 @@ from blueprints.planes_accion.routes import planes_accion_bp
 from services.notificaciones_service import generar_notificaciones
 
 
-
 def create_app():
-    app = Flask(__name__,template_folder='templates')
+    app = Flask(__name__, template_folder='templates')
     app.config.from_object(Config)
 
     mail.init_app(app)
 
-    # Registrar Blueprints - AUTH PRIMERO para evitar conflictos
+    # Registrar blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(evaluaciones_medicas_bp)
@@ -50,6 +48,5 @@ def create_app():
             print("✅ Notificaciones generadas al iniciar la aplicación.")
         except Exception as e:
             print(f"⚠️ Error generando notificaciones: {e}")
-
 
     return app
