@@ -17,7 +17,8 @@ def inject_rol():
 
 @app.route("/health")
 def health():
-    return "OK" 200
+    return "OK", 200
+
 
 
 # ---------------------------
