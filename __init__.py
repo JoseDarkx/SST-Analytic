@@ -42,11 +42,4 @@ def create_app():
 
     app.teardown_appcontext(close_db)
 
-    with app.app_context():
-        try:
-            generar_notificaciones()
-            print("✅ Notificaciones generadas al iniciar la aplicación.")
-        except Exception as e:
-            print(f"⚠️ Error generando notificaciones: {e}")
-
     return app
