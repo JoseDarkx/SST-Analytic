@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from database import get_connection as get_db
+from extensions import get_db
 import mysql.connector
 
 def generar_notificaciones():

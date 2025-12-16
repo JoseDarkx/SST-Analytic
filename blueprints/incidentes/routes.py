@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from utils.permisos import  requiere_roles
 import os
 from datetime import datetime
-from database import get_connection as get_db
+from extensions import get_db
 
 # Blueprint sin url_prefix (como pediste)
 incidentes_bp = Blueprint('incidentes', __name__)

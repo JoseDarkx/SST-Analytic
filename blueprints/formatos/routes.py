@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory
-from database import get_connection as get_db
+from extensions import get_db
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename

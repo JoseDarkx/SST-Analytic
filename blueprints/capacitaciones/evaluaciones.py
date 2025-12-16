@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, session, flash, jsonify, send_file
-from database import get_connection as get_db
+from extensions import get_db
 import mysql.connector
 from datetime import timedelta
 from utils.permisos import requiere_roles

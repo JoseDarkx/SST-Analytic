@@ -1,5 +1,5 @@
 import os
-from database import get_connection as get_db
+from extensions import get_db
 import re
 import mysql.connector
 from flask import render_template, request, redirect, url_for, session, flash, jsonify

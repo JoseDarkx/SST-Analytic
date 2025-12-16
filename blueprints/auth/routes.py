@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from database import get_connection as get_db
+from extensions import get_db
 from datetime import datetime, timedelta
 from werkzeug.security import  check_password_hash
 import mysql.connector
