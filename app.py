@@ -15,6 +15,11 @@ moment = Moment(app)
 def inject_rol():
     return dict(rol=session.get('rol', 'Usuario'))
 
+@app.route("/health")
+def health():
+    return "OK"
+
+
 # ---------------------------
 # 🔹 Rutas públicas
 # ---------------------------
