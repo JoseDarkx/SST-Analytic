@@ -1,6 +1,6 @@
 # app.py - Archivo principal correcto para Railway
 
-from __init__ import create_app
+from app_factory import create_app
 from flask import render_template, session
 from flask_moment import Moment
 
