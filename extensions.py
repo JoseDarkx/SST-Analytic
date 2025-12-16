@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def get_db():
     """
     Obtiene conexión a MySQL usando las variables de Railway.
-    Incluye manejo de errores y logging.
+    Incluye manejo de errores y logging para depuración.
     """
     try:
         connection = mysql.connector.connect(
@@ -29,29 +29,13 @@ def get_db():
         logger.error(f"User: {current_app.config.get('MYSQL_USER')}")
         logger.error(f"Database: {current_app.config.get('MYSQL_DB')}")
         return None
+    except Exception as e:
+        logger.error(f"❌ Error inesperado al conectar: {e}")
+        return None
 
 def close_db(e=None):
-    """Cierra la conexión a la base de datos"""
+    """Cierra la conexión a la base de datos si existe"""
     pass
-```
 
----
-
-## 🗑️ **ELIMINA el archivo `database.py` si existe**
-
-Ya no lo necesitas porque `extensions.py` tiene la función `get_db()`.
-
-Si tienes un archivo `database.py`, puedes:
-1. Eliminarlo completamente, O
-2. Dejarlo vacío
-
----
-
-## ⚙️ **Variables que debes configurar en Railway**
-
-Ve a tu servicio web en Railway → **Variables** y agrega estas (solo las que falten):
-```
-SECRET_KEY=produccion-clave-super-segura-123456789
-MAIL_USERNAME=josepberdugo3@gmail.com
-MAIL_PASSWORD=tzdv lrcv qqgs rpwt
-MAIL_DEFAULT_SENDER=josepberdugo3@gmail.com
+# Alias para compatibilidad con código existente
+get_connection = get_db
