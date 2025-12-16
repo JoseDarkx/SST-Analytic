@@ -16,7 +16,7 @@ from blueprints.incidentes.routes import incidentes_bp
 from blueprints.formatos.routes import formatos_globales_bp
 from blueprints.normativas.routes import normativas_bp
 from blueprints.planes_accion.routes import planes_accion_bp
-from services.notificaciones_service import generar_notificaciones
+#from services.notificaciones_service import generar_notificaciones
 
 
 def create_app():
